@@ -1,7 +1,7 @@
 export interface CardElement {
   id: string;
-  type: 'text' | 'icon' | 'image';
-  tag: string; // template tag name e.g. "{{name}}"
+  type: 'text' | 'icon' | 'image' | 'hline' | 'vline' | 'svg';
+  tag: string;
   x: number;
   y: number;
   width: number;
@@ -11,6 +11,8 @@ export interface CardElement {
     fontWeight?: string;
     color?: string;
     iconName?: string;
+    strokeWidth?: number;
+    svgData?: string; // data URL for uploaded SVG
   };
 }
 
