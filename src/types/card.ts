@@ -24,10 +24,13 @@ export interface CardTemplate {
   elements: CardElement[];
 }
 
+export type CardRow = Record<string, string>;
+
 export interface CardProject {
   id: string;
   name: string;
   description: string;
   createdAt: string;
   template: CardTemplate | null;
+  rows: CardRow[];
 }
