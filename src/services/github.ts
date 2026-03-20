@@ -129,6 +129,45 @@ const renderCardHtml = (template: CardTemplate, row: CardRow, index: number): st
 </html>`;
 };
 
+/** Generate JSON-LD with TCG Schema annotations for a card */
+const renderCardJsonLd = (template: CardTemplate, row: CardRow, index: number): string => {
+  const TCG_CONTEXT = 'https://tcg-schema.org/core#';
+
+  const properties: Record<string, unknown> = {};
+  template.elements.forEach((el) => {
+    if (!el.tcgType) return;
+    const tagMatch = el.tag.match(/^\{\{(.+)\}\}$/);
+    const tagName = tagMatch ? tagMatch[1].trim() : null;
+    const value = tagName ? row[tagName] ?? '' : el.tag;
+
+    // Map tcg type to a property-friendly key
+    const typeKey = el.tcgType.replace('tcg:', '');
+    const propKey = typeKey.charAt(0).toLowerCase() + typeKey.slice(1);
+
+    if (el.type === 'image') {
+      const imgUrl = tagName && row[tagName] ? row[tagName] : el.style.imageUrl;
+      if (imgUrl) {
+        properties[propKey] = { '@type': 'schema:ImageObject', 'schema:url': imgUrl };
+      }
+    } else {
+      properties[propKey] = value;
+    }
+  });
+
+  const jsonLd = {
+    '@context': {
+      tcg: TCG_CONTEXT,
+      schema: 'https://schema.org/',
+    },
+    '@type': 'tcg:Card',
+    '@id': `card:${index + 1}`,
+    'schema:name': row['name'] || `Card ${index + 1}`,
+    ...properties,
+  };
+
+  return JSON.stringify(jsonLd, null, 2);
+};
+
 /** Save a full project to a GitHub repo */
 export const saveProjectToRepo = async (
   token: string,
@@ -164,7 +203,9 @@ export const saveProjectToRepo = async (
     );
   }
 
-  // 3. Save each card as HTML
+  // 3. Save each card as HTML + JSON-LD
+  const hasTcgAnnotations = project.template.elements.some((el) => el.tcgType);
+
   for (let i = 0; i < project.rows.length; i++) {
     const html = renderCardHtml(project.template, project.rows[i], i);
     await putFile(
@@ -174,7 +215,20 @@ export const saveProjectToRepo = async (
       `Update card ${i + 1} for "${project.name}"`,
       branch
     );
+
+    // JSON-LD only if at least one element has a TCG type
+    if (hasTcgAnnotations) {
+      const jsonLd = renderCardJsonLd(project.template, project.rows[i], i);
+      await putFile(
+        token, repo,
+        `${prefix}/cards/card_${String(i + 1).padStart(3, '0')}.jsonld`,
+        jsonLd,
+        `Update card ${i + 1} JSON-LD for "${project.name}"`,
+        branch
+      );
+    }
   }
 
-  return { path: prefix, fileCount: 2 + project.rows.length };
+  const jsonLdCount = hasTcgAnnotations ? project.rows.length : 0;
+  return { path: prefix, fileCount: 2 + project.rows.length + jsonLdCount };
 };
