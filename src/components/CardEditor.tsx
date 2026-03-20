@@ -56,6 +56,9 @@ export const CardEditor = () => {
             <TabsTrigger value="preview" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
               Preview ({project.rows.length})
             </TabsTrigger>
+            <TabsTrigger value="github" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display gap-1">
+              <Github size={12} /> GitHub
+            </TabsTrigger>
           </TabsList>
         </div>
 
@@ -70,6 +73,10 @@ export const CardEditor = () => {
 
         <TabsContent value="preview" className="flex-1 flex overflow-hidden mt-0">
           <CardPreviewGrid />
+        </TabsContent>
+
+        <TabsContent value="github" className="flex-1 flex overflow-hidden mt-0">
+          <GitHubPanel />
         </TabsContent>
       </Tabs>
     </div>
