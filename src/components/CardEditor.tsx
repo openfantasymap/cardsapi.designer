@@ -4,9 +4,10 @@ import { CardCanvas } from '@/components/CardCanvas';
 import { ElementPanel } from '@/components/ElementPanel';
 import { SpreadsheetPanel } from '@/components/SpreadsheetPanel';
 import { CardPreviewGrid } from '@/components/CardPreviewGrid';
+import { GitHubPanel } from '@/components/GitHubPanel';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Upload } from 'lucide-react';
+import { ArrowLeft, Upload, Github } from 'lucide-react';
 import { useRef } from 'react';
 
 export const CardEditor = () => {
