@@ -225,6 +225,32 @@ export const ElementPanel = () => {
                 />
               </div>
             )}
+
+            {/* TCG Schema Type */}
+            <div>
+              <Label className="text-xs text-muted-foreground">TCG Schema Type</Label>
+              <Select
+                value={selectedElement.tcgType || ''}
+                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgType: v as any })}
+              >
+                <SelectTrigger className="text-xs h-8 mt-1">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="" className="text-xs">None</SelectItem>
+                  {TCG_SCHEMA_CLASSES.map((cls) => (
+                    <SelectItem key={cls.uri} value={cls.uri} className="text-xs">
+                      {cls.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedElement.tcgType && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  <code className="text-primary">{selectedElement.tcgType}</code>
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
