@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
-import { CardElement } from '@/types/card';
+import { CardElement, TCG_SCHEMA_CLASSES } from '@/types/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon } from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
@@ -224,6 +225,32 @@ export const ElementPanel = () => {
                 />
               </div>
             )}
+
+            {/* TCG Schema Type */}
+            <div>
+              <Label className="text-xs text-muted-foreground">TCG Schema Type</Label>
+              <Select
+                value={selectedElement.tcgType || ''}
+                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgType: v as any })}
+              >
+                <SelectTrigger className="text-xs h-8 mt-1">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="" className="text-xs">None</SelectItem>
+                  {TCG_SCHEMA_CLASSES.map((cls) => (
+                    <SelectItem key={cls.uri} value={cls.uri} className="text-xs">
+                      {cls.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedElement.tcgType && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  <code className="text-primary">{selectedElement.tcgType}</code>
+                </p>
+              )}
+            </div>
           </div>
         </div>
       )}
