@@ -43,12 +43,14 @@ const renderElement = (el: CardElement, value?: string) => {
       ) : (
         <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">SVG</div>
       );
-    case 'image':
-      return el.style.imageUrl ? (
-        <img src={el.style.imageUrl} alt={el.tag} className="w-full h-full object-cover rounded" draggable={false} />
+    case 'image': {
+      const url = value !== undefined && value !== el.tag ? value : el.style.imageUrl;
+      return url ? (
+        <img src={url} alt={el.tag} className="w-full h-full object-cover rounded" draggable={false} />
       ) : (
         <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs border border-dashed border-muted-foreground/30 rounded">IMG</div>
       );
+    }
     default:
       return null;
   }

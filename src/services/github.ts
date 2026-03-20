@@ -107,9 +107,11 @@ const renderCardHtml = (template: CardTemplate, row: CardRow, index: number): st
         case 'svg':
           inner = el.style.svgData ? `<img src="${el.style.svgData}" style="width:100%;height:100%;object-fit:contain"/>` : '';
           break;
-        case 'image':
-          inner = el.style.imageUrl ? `<img src="${el.style.imageUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:4px"/>` : '';
-          break;
+      case 'image': {
+        const imgUrl = el.type === 'image' && tagName && row[tagName] ? row[tagName] : el.style.imageUrl;
+        inner = imgUrl ? `<img src="${imgUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:4px"/>` : '';
+        break;
+      }
       }
 
       return `<div style="position:absolute;left:${el.x}px;top:${el.y}px;width:${el.width}px;height:${el.height}px;display:flex;align-items:center;justify-content:center">${inner}</div>`;
