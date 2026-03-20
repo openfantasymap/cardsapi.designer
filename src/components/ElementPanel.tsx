@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
-import { CardElement, TCG_SCHEMA_CLASSES } from '@/types/card';
+import { CardElement, TCG_SCHEMA_CLASSES, TCG_SCHEMA_PROPERTIES } from '@/types/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
