@@ -230,14 +230,14 @@ export const ElementPanel = () => {
             <div>
               <Label className="text-xs text-muted-foreground">TCG Schema Type</Label>
               <Select
-                value={selectedElement.tcgType || ''}
-                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgType: v as any })}
+                value={selectedElement.tcgType || '__none__'}
+                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgType: (v === '__none__' ? '' : v) as any })}
               >
                 <SelectTrigger className="text-xs h-8 mt-1">
                   <SelectValue placeholder="None" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="" className="text-xs">None</SelectItem>
+                  <SelectItem value="__none__" className="text-xs">None</SelectItem>
                   {TCG_SCHEMA_CLASSES.map((cls) => (
                     <SelectItem key={cls.uri} value={cls.uri} className="text-xs">
                       {cls.label}
