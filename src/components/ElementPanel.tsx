@@ -4,7 +4,7 @@ import { CardElement } from '@/types/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage } from 'lucide-react';
+import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon } from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
