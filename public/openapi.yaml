@@ -1,42 +1,49 @@
 openapi: 3.0.3
 info:
-  title: CardForge GitHub Persistence API
+  title: CardForge API
   description: >
-    API specification for CardForge's GitHub-based persistence layer.
-    All operations interact with a GitHub repository to store and retrieve
-    card templates (JSON), spreadsheet data (CSV), and rendered cards (HTML).
-  version: 1.0.0
+    Backend API for CardForge. The frontend authenticates users via GitHub PAT
+    and forwards the token to this API. All GitHub repository operations
+    (reading/writing files) are handled server-side.
+  version: 2.0.0
   contact:
     name: CardForge
 
 servers:
-  - url: https://api.github.com
-    description: GitHub REST API
+  - url: /api
+    description: CardForge backend (relative)
 
 security:
   - bearerAuth: []
 
 paths:
-  /user:
+  # ── Authentication ─────────────────────────────────────
+  /auth/me:
     get:
-      operationId: getAuthenticatedUser
-      summary: Get authenticated GitHub user
-      tags: [Authentication]
+      operationId: getMe
+      summary: Get current user identity
+      description: >
+        Validates the forwarded GitHub token and returns user info.
+        The backend calls GitHub's /user endpoint on the server side.
+      tags: [Auth]
       responses:
         '200':
-          description: Authenticated user profile
+          description: Authenticated user
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GitHubUser'
+                $ref: '#/components/schemas/User'
         '401':
-          description: Invalid or expired token
+          description: Invalid or expired GitHub token
 
-  /user/repos:
+  # ── Repositories ───────────────────────────────────────
+  /repos:
     get:
-      operationId: listUserRepos
-      summary: List repositories for authenticated user
-      tags: [Repositories]
+      operationId: listRepos
+      summary: List repositories the user can push to
+      description: >
+        Proxies GitHub's repo listing. Returns a simplified list.
+      tags: [Repos]
       parameters:
         - name: sort
           in: query
@@ -58,66 +65,18 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/GitHubRepo'
+                  $ref: '#/components/schemas/RepoSummary'
 
-  /repos/{owner}/{repo}/contents/{path}:
-    get:
-      operationId: getFileContent
-      summary: Get file content from repository
-      tags: [Files]
-      parameters:
-        - $ref: '#/components/parameters/owner'
-        - $ref: '#/components/parameters/repo'
-        - $ref: '#/components/parameters/path'
-        - name: ref
-          in: query
-          schema:
-            type: string
-          description: Branch or commit ref
-      responses:
-        '200':
-          description: File content (base64 encoded)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/FileContent'
-        '404':
-          description: File not found
-
-    put:
-      operationId: createOrUpdateFile
-      summary: Create or update a file in the repository
-      tags: [Files]
-      parameters:
-        - $ref: '#/components/parameters/owner'
-        - $ref: '#/components/parameters/repo'
-        - $ref: '#/components/parameters/path'
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PutFileRequest'
-      responses:
-        '200':
-          description: File updated
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PutFileResponse'
-        '201':
-          description: File created
-
-  # ---- CardForge Virtual Endpoints (for backend implementation) ----
-
-  /cardforge/projects/{projectId}/save:
+  # ── Projects ───────────────────────────────────────────
+  /projects/{projectId}/save:
     post:
       operationId: saveProject
-      summary: Save a complete CardForge project to a GitHub repo
+      summary: Save a CardForge project to a GitHub repo
       description: >
-        Saves template.json, data.csv, and individual card HTML files to
-        the configured GitHub repository under `cardforge/{projectName}/`.
-      tags: [CardForge]
+        Receives the full project payload. The backend generates template.json,
+        data.csv, card HTML files, and JSON-LD (if TCG annotations are present),
+        then commits them to the specified GitHub repo under `cardforge/{projectName}/`.
+      tags: [Projects]
       parameters:
         - name: projectId
           in: path
@@ -142,11 +101,14 @@ paths:
         '401':
           description: GitHub token invalid
 
-  /cardforge/projects/{projectId}/load:
+  /projects/{projectId}/load:
     get:
       operationId: loadProject
       summary: Load a CardForge project from a GitHub repo
-      tags: [CardForge]
+      description: >
+        Reads template.json and data.csv from the repo and reconstructs
+        the CardProject object.
+      tags: [Projects]
       parameters:
         - name: projectId
           in: path
@@ -169,36 +131,47 @@ paths:
         '404':
           description: Project not found in repo
 
+  # ── Export ─────────────────────────────────────────────
+  /projects/{projectId}/export:
+    post:
+      operationId: exportProject
+      summary: Export rendered cards without saving to GitHub
+      description: >
+        Returns a zip archive of generated HTML cards, JSON-LD,
+        template.json, and data.csv — without committing to a repo.
+      tags: [Projects]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExportProjectRequest'
+      responses:
+        '200':
+          description: Zip archive
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+
 components:
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
-      description: GitHub Personal Access Token with `repo` scope
-
-  parameters:
-    owner:
-      name: owner
-      in: path
-      required: true
-      schema:
-        type: string
-    repo:
-      name: repo
-      in: path
-      required: true
-      schema:
-        type: string
-    path:
-      name: path
-      in: path
-      required: true
-      schema:
-        type: string
-      description: "File path relative to repo root (e.g. cardforge/MyProject/template.json)"
+      description: >
+        GitHub Personal Access Token forwarded by the frontend.
+        The backend uses this to authenticate GitHub API calls.
 
   schemas:
-    GitHubUser:
+    User:
       type: object
       properties:
         login:
@@ -211,7 +184,7 @@ components:
           type: string
           nullable: true
 
-    GitHubRepo:
+    RepoSummary:
       type: object
       properties:
         full_name:
@@ -220,60 +193,12 @@ components:
         name:
           type: string
         owner:
-          type: object
-          properties:
-            login:
-              type: string
+          type: string
         private:
           type: boolean
         default_branch:
           type: string
           example: main
-
-    FileContent:
-      type: object
-      properties:
-        name:
-          type: string
-        path:
-          type: string
-        sha:
-          type: string
-        content:
-          type: string
-          description: Base64-encoded file content
-        encoding:
-          type: string
-          enum: [base64]
-
-    PutFileRequest:
-      type: object
-      required: [message, content]
-      properties:
-        message:
-          type: string
-          description: Commit message
-        content:
-          type: string
-          description: Base64-encoded file content
-        sha:
-          type: string
-          description: SHA of existing file (required for updates)
-        branch:
-          type: string
-
-    PutFileResponse:
-      type: object
-      properties:
-        content:
-          $ref: '#/components/schemas/FileContent'
-        commit:
-          type: object
-          properties:
-            sha:
-              type: string
-            message:
-              type: string
 
     CardElementStyle:
       type: object
@@ -317,6 +242,12 @@ components:
           type: number
         style:
           $ref: '#/components/schemas/CardElementStyle'
+        tcgType:
+          type: string
+          description: "TCG Schema class URI (e.g. tcg:Card)"
+        tcgProperty:
+          type: string
+          description: "TCG Schema property URI (e.g. tcg:cardName)"
 
     CardTemplate:
       type: object
@@ -388,8 +319,13 @@ components:
       properties:
         path:
           type: string
-          description: "Repo path prefix where files were saved"
           example: cardforge/MyProject
         fileCount:
           type: integer
-          description: Number of files committed
+
+    ExportProjectRequest:
+      type: object
+      required: [project]
+      properties:
+        project:
+          $ref: '#/components/schemas/CardProject'

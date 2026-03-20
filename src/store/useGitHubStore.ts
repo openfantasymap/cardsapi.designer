@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { RepoSummary } from '@/services/api';
 
 interface GitHubUser {
   login: string;
@@ -6,24 +7,16 @@ interface GitHubUser {
   name: string | null;
 }
 
-interface GitHubRepo {
-  full_name: string;
-  name: string;
-  owner: { login: string };
-  private: boolean;
-  default_branch: string;
-}
-
 interface GitHubStore {
   token: string | null;
   user: GitHubUser | null;
-  repos: GitHubRepo[];
+  repos: RepoSummary[];
   selectedRepo: string | null;
   loading: boolean;
 
   setToken: (token: string | null) => void;
   setUser: (user: GitHubUser | null) => void;
-  setRepos: (repos: GitHubRepo[]) => void;
+  setRepos: (repos: RepoSummary[]) => void;
   setSelectedRepo: (repo: string | null) => void;
   setLoading: (loading: boolean) => void;
   logout: () => void;

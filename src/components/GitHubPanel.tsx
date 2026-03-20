@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { useProjectStore } from '@/store/useProjectStore';
-import { getUser, listRepos, saveProjectToRepo } from '@/services/github';
+import { getUser } from '@/services/github';
+import { listRepos, saveProject } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -57,7 +58,7 @@ export const GitHubPanel = () => {
     if (!token || !selectedRepo || !project) return;
     setSaving(true);
     try {
-      const result = await saveProjectToRepo(token, selectedRepo, project);
+      const result = await saveProject(token, selectedRepo, project);
       toast.success(`Saved ${result.fileCount} files to ${selectedRepo}/${result.path}`);
     } catch (err: any) {
       toast.error(err.message || 'Save failed');
@@ -153,10 +154,11 @@ export const GitHubPanel = () => {
             <li>• <code>template.json</code> — card template</li>
             <li>• <code>data.csv</code> — spreadsheet data</li>
             <li>• <code>cards/*.html</code> — rendered cards</li>
+            <li>• <code>cards/*.jsonld</code> — TCG Schema linked data</li>
           </ul>
           <Button onClick={handleSave} disabled={saving} className="w-full gap-2 text-xs">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            {saving ? 'Saving…' : 'Save to GitHub'}
+            {saving ? 'Saving…' : 'Save via API'}
           </Button>
         </div>
       )}
