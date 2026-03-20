@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
-import { CardElement, TCG_SCHEMA_CLASSES } from '@/types/card';
+import { CardElement, TCG_SCHEMA_CLASSES, TCG_SCHEMA_PROPERTIES } from '@/types/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -248,6 +248,34 @@ export const ElementPanel = () => {
               {selectedElement.tcgType && (
                 <p className="text-xs text-muted-foreground mt-1">
                   <code className="text-primary">{selectedElement.tcgType}</code>
+                </p>
+              )}
+            </div>
+
+            {/* TCG Schema Property */}
+            <div>
+              <Label className="text-xs text-muted-foreground">TCG Property</Label>
+              <Select
+                value={selectedElement.tcgProperty || '__none__'}
+                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgProperty: (v === '__none__' ? '' : v) as any })}
+              >
+                <SelectTrigger className="text-xs h-8 mt-1">
+                  <SelectValue placeholder="None" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__" className="text-xs">None</SelectItem>
+                  {TCG_SCHEMA_PROPERTIES
+                    .filter((p) => !selectedElement.tcgType || p.domain === '__any__' || p.domain === selectedElement.tcgType)
+                    .map((prop) => (
+                      <SelectItem key={prop.uri} value={prop.uri} className="text-xs">
+                        {prop.label}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+              {selectedElement.tcgProperty && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  <code className="text-primary">{selectedElement.tcgProperty}</code>
                 </p>
               )}
             </div>
