@@ -212,6 +212,18 @@ export const ElementPanel = () => {
                 <input type="file" accept=".svg" className="text-xs mt-1 file:text-xs file:mr-2 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-muted-foreground" onChange={handleReplaceSvg} />
               </div>
             )}
+
+            {selectedElement.type === 'image' && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Image URL</Label>
+                <Input
+                  placeholder="https://example.com/image.png"
+                  value={selectedElement.style.imageUrl || ''}
+                  onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, imageUrl: e.target.value } })}
+                  className="text-xs h-8 mt-1"
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
