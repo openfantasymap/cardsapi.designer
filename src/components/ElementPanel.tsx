@@ -4,7 +4,7 @@ import { CardElement } from '@/types/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage } from 'lucide-react';
+import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon } from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
@@ -114,6 +114,9 @@ export const ElementPanel = () => {
         <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-2" onClick={() => svgRef.current?.click()}>
           <FileImage size={12} /> Upload SVG
         </Button>
+        <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-1" onClick={() => handleAddElement('image')}>
+          <ImageIcon size={12} /> Image URL
+        </Button>
       </div>
 
       <div>
@@ -207,6 +210,18 @@ export const ElementPanel = () => {
               <div>
                 <Label className="text-xs text-muted-foreground">Replace SVG</Label>
                 <input type="file" accept=".svg" className="text-xs mt-1 file:text-xs file:mr-2 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-muted-foreground" onChange={handleReplaceSvg} />
+              </div>
+            )}
+
+            {selectedElement.type === 'image' && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Image URL</Label>
+                <Input
+                  placeholder="https://example.com/image.png"
+                  value={selectedElement.style.imageUrl || ''}
+                  onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, imageUrl: e.target.value } })}
+                  className="text-xs h-8 mt-1"
+                />
               </div>
             )}
           </div>

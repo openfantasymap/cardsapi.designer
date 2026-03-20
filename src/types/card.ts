@@ -12,7 +12,8 @@ export interface CardElement {
     color?: string;
     iconName?: string;
     strokeWidth?: number;
-    svgData?: string; // data URL for uploaded SVG
+    svgData?: string;
+    imageUrl?: string; // URL for image elements
   };
 }
 
