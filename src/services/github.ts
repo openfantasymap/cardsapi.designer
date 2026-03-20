@@ -134,15 +134,24 @@ const renderCardJsonLd = (template: CardTemplate, row: CardRow, index: number): 
   const TCG_CONTEXT = 'https://tcg-schema.org/core#';
 
   const properties: Record<string, unknown> = {};
+  const types = new Set<string>();
+
   template.elements.forEach((el) => {
-    if (!el.tcgType) return;
+    if (!el.tcgType && !el.tcgProperty) return;
+
+    if (el.tcgType) types.add(el.tcgType);
+
     const tagMatch = el.tag.match(/^\{\{(.+)\}\}$/);
     const tagName = tagMatch ? tagMatch[1].trim() : null;
     const value = tagName ? row[tagName] ?? '' : el.tag;
 
-    // Map tcg type to a property-friendly key
-    const typeKey = el.tcgType.replace('tcg:', '');
-    const propKey = typeKey.charAt(0).toLowerCase() + typeKey.slice(1);
+    // Use tcgProperty if set, otherwise fall back to type-derived key
+    const propKey = el.tcgProperty || (() => {
+      if (!el.tcgType) return null;
+      const typeKey = el.tcgType.replace('tcg:', '');
+      return 'tcg:' + typeKey.charAt(0).toLowerCase() + typeKey.slice(1);
+    })();
+    if (!propKey) return;
 
     if (el.type === 'image') {
       const imgUrl = tagName && row[tagName] ? row[tagName] : el.style.imageUrl;
@@ -159,7 +168,7 @@ const renderCardJsonLd = (template: CardTemplate, row: CardRow, index: number): 
       tcg: TCG_CONTEXT,
       schema: 'https://schema.org/',
     },
-    '@type': 'tcg:Card',
+    '@type': types.size > 0 ? Array.from(types) : 'tcg:Card',
     '@id': `card:${index + 1}`,
     'schema:name': row['name'] || `Card ${index + 1}`,
     ...properties,
