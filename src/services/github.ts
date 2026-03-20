@@ -213,7 +213,7 @@ export const saveProjectToRepo = async (
   }
 
   // 3. Save each card as HTML + JSON-LD
-  const hasTcgAnnotations = project.template.elements.some((el) => el.tcgType);
+  const hasTcgAnnotations = project.template.elements.some((el) => el.tcgType || el.tcgProperty);
 
   for (let i = 0; i < project.rows.length; i++) {
     const html = renderCardHtml(project.template, project.rows[i], i);
