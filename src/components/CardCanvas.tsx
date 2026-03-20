@@ -2,6 +2,54 @@ import { useRef, useState, useCallback } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { CardElement } from '@/types/card';
 
+const renderElement = (el: CardElement, value?: string) => {
+  const display = value ?? el.tag;
+
+  switch (el.type) {
+    case 'text':
+      return (
+        <div
+          className="w-full h-full flex items-center font-display truncate px-1"
+          style={{
+            fontSize: el.style.fontSize || 14,
+            fontWeight: el.style.fontWeight || 'normal',
+            color: el.style.color || 'hsl(210 20% 92%)',
+          }}
+        >
+          {display}
+        </div>
+      );
+    case 'icon':
+      return (
+        <div className="w-full h-full flex items-center justify-center" style={{ fontSize: el.style.fontSize || 24, color: el.style.color || 'hsl(var(--primary))' }}>
+          ◆
+        </div>
+      );
+    case 'hline':
+      return (
+        <div className="w-full h-full flex items-center">
+          <div className="w-full" style={{ height: el.style.strokeWidth || 2, backgroundColor: el.style.color || 'hsl(210 20% 92%)' }} />
+        </div>
+      );
+    case 'vline':
+      return (
+        <div className="w-full h-full flex justify-center">
+          <div className="h-full" style={{ width: el.style.strokeWidth || 2, backgroundColor: el.style.color || 'hsl(210 20% 92%)' }} />
+        </div>
+      );
+    case 'svg':
+      return el.style.svgData ? (
+        <img src={el.style.svgData} alt={el.tag} className="w-full h-full object-contain" draggable={false} />
+      ) : (
+        <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">SVG</div>
+      );
+    default:
+      return null;
+  }
+};
+
+export { renderElement };
+
 export const CardCanvas = () => {
   const { projects, activeProjectId, selectedElementId, setSelectedElement, updateElement } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
@@ -15,11 +63,7 @@ export const CardCanvas = () => {
       setSelectedElement(el.id);
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
-      setDragging({
-        id: el.id,
-        offsetX: e.clientX - rect.left - el.x,
-        offsetY: e.clientY - rect.top - el.y,
-      });
+      setDragging({ id: el.id, offsetX: e.clientX - rect.left - el.x, offsetY: e.clientY - rect.top - el.y });
     },
     [setSelectedElement]
   );
@@ -35,9 +79,7 @@ export const CardCanvas = () => {
     [dragging, activeProjectId, updateElement]
   );
 
-  const handleMouseUp = useCallback(() => {
-    setDragging(null);
-  }, []);
+  const handleMouseUp = useCallback(() => setDragging(null), []);
 
   if (!template) return null;
 
@@ -67,34 +109,10 @@ export const CardCanvas = () => {
                 ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent'
                 : 'hover:ring-1 hover:ring-muted-foreground/30'
             }`}
-            style={{
-              left: el.x,
-              top: el.y,
-              width: el.width,
-              height: el.height,
-            }}
+            style={{ left: el.x, top: el.y, width: el.width, height: el.height }}
             onMouseDown={(e) => handleMouseDown(e, el)}
           >
-            {el.type === 'text' && (
-              <div
-                className="w-full h-full flex items-center font-display truncate px-1"
-                style={{
-                  fontSize: el.style.fontSize || 14,
-                  fontWeight: el.style.fontWeight || 'normal',
-                  color: el.style.color || 'hsl(210 20% 92%)',
-                }}
-              >
-                {el.tag}
-              </div>
-            )}
-            {el.type === 'icon' && (
-              <div
-                className="w-full h-full flex items-center justify-center text-primary"
-                style={{ fontSize: el.style.fontSize || 24 }}
-              >
-                ◆
-              </div>
-            )}
+            {renderElement(el)}
           </div>
         ))}
       </div>

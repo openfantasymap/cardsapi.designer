@@ -1,4 +1,5 @@
 import { useProjectStore } from '@/store/useProjectStore';
+import { renderElement } from '@/components/CardCanvas';
 
 export const CardPreviewGrid = () => {
   const { projects, activeProjectId } = useProjectStore();
@@ -42,7 +43,7 @@ export const CardPreviewGrid = () => {
               {template.elements.map((el) => {
                 const tagMatch = el.tag.match(/^\{\{(.+)\}\}$/);
                 const tagName = tagMatch ? tagMatch[1].trim() : null;
-                const value = tagName ? row[tagName] ?? el.tag : el.tag;
+                const value = tagName ? row[tagName] ?? el.tag : undefined;
 
                 return (
                   <div
@@ -50,23 +51,7 @@ export const CardPreviewGrid = () => {
                     className="absolute"
                     style={{ left: el.x, top: el.y, width: el.width, height: el.height }}
                   >
-                    {el.type === 'text' && (
-                      <div
-                        className="w-full h-full flex items-center font-display truncate px-1"
-                        style={{
-                          fontSize: el.style.fontSize || 14,
-                          fontWeight: el.style.fontWeight || 'normal',
-                          color: el.style.color || 'hsl(210 20% 92%)',
-                        }}
-                      >
-                        {value}
-                      </div>
-                    )}
-                    {el.type === 'icon' && (
-                      <div className="w-full h-full flex items-center justify-center text-primary" style={{ fontSize: el.style.fontSize || 24 }}>
-                        ◆
-                      </div>
-                    )}
+                    {renderElement(el, value)}
                   </div>
                 );
               })}
