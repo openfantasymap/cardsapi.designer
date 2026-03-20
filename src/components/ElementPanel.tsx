@@ -114,6 +114,9 @@ export const ElementPanel = () => {
         <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-2" onClick={() => svgRef.current?.click()}>
           <FileImage size={12} /> Upload SVG
         </Button>
+        <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-1" onClick={() => handleAddElement('image')}>
+          <ImageIcon size={12} /> Image URL
+        </Button>
       </div>
 
       <div>
