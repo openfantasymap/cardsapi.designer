@@ -1,0 +1,395 @@
+openapi: 3.0.3
+info:
+  title: CardForge GitHub Persistence API
+  description: >
+    API specification for CardForge's GitHub-based persistence layer.
+    All operations interact with a GitHub repository to store and retrieve
+    card templates (JSON), spreadsheet data (CSV), and rendered cards (HTML).
+  version: 1.0.0
+  contact:
+    name: CardForge
+
+servers:
+  - url: https://api.github.com
+    description: GitHub REST API
+
+security:
+  - bearerAuth: []
+
+paths:
+  /user:
+    get:
+      operationId: getAuthenticatedUser
+      summary: Get authenticated GitHub user
+      tags: [Authentication]
+      responses:
+        '200':
+          description: Authenticated user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GitHubUser'
+        '401':
+          description: Invalid or expired token
+
+  /user/repos:
+    get:
+      operationId: listUserRepos
+      summary: List repositories for authenticated user
+      tags: [Repositories]
+      parameters:
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [updated, created, pushed, full_name]
+            default: updated
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 30
+            maximum: 100
+      responses:
+        '200':
+          description: List of repositories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GitHubRepo'
+
+  /repos/{owner}/{repo}/contents/{path}:
+    get:
+      operationId: getFileContent
+      summary: Get file content from repository
+      tags: [Files]
+      parameters:
+        - $ref: '#/components/parameters/owner'
+        - $ref: '#/components/parameters/repo'
+        - $ref: '#/components/parameters/path'
+        - name: ref
+          in: query
+          schema:
+            type: string
+          description: Branch or commit ref
+      responses:
+        '200':
+          description: File content (base64 encoded)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FileContent'
+        '404':
+          description: File not found
+
+    put:
+      operationId: createOrUpdateFile
+      summary: Create or update a file in the repository
+      tags: [Files]
+      parameters:
+        - $ref: '#/components/parameters/owner'
+        - $ref: '#/components/parameters/repo'
+        - $ref: '#/components/parameters/path'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutFileRequest'
+      responses:
+        '200':
+          description: File updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PutFileResponse'
+        '201':
+          description: File created
+
+  # ---- CardForge Virtual Endpoints (for backend implementation) ----
+
+  /cardforge/projects/{projectId}/save:
+    post:
+      operationId: saveProject
+      summary: Save a complete CardForge project to a GitHub repo
+      description: >
+        Saves template.json, data.csv, and individual card HTML files to
+        the configured GitHub repository under `cardforge/{projectName}/`.
+      tags: [CardForge]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveProjectRequest'
+      responses:
+        '200':
+          description: Project saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SaveProjectResponse'
+        '400':
+          description: Invalid project or missing template
+        '401':
+          description: GitHub token invalid
+
+  /cardforge/projects/{projectId}/load:
+    get:
+      operationId: loadProject
+      summary: Load a CardForge project from a GitHub repo
+      tags: [CardForge]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: repo
+          in: query
+          required: true
+          schema:
+            type: string
+          description: "Full repo name (owner/repo)"
+      responses:
+        '200':
+          description: Project loaded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CardProject'
+        '404':
+          description: Project not found in repo
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: GitHub Personal Access Token with `repo` scope
+
+  parameters:
+    owner:
+      name: owner
+      in: path
+      required: true
+      schema:
+        type: string
+    repo:
+      name: repo
+      in: path
+      required: true
+      schema:
+        type: string
+    path:
+      name: path
+      in: path
+      required: true
+      schema:
+        type: string
+      description: "File path relative to repo root (e.g. cardforge/MyProject/template.json)"
+
+  schemas:
+    GitHubUser:
+      type: object
+      properties:
+        login:
+          type: string
+          example: octocat
+        avatar_url:
+          type: string
+          format: uri
+        name:
+          type: string
+          nullable: true
+
+    GitHubRepo:
+      type: object
+      properties:
+        full_name:
+          type: string
+          example: octocat/my-cards
+        name:
+          type: string
+        owner:
+          type: object
+          properties:
+            login:
+              type: string
+        private:
+          type: boolean
+        default_branch:
+          type: string
+          example: main
+
+    FileContent:
+      type: object
+      properties:
+        name:
+          type: string
+        path:
+          type: string
+        sha:
+          type: string
+        content:
+          type: string
+          description: Base64-encoded file content
+        encoding:
+          type: string
+          enum: [base64]
+
+    PutFileRequest:
+      type: object
+      required: [message, content]
+      properties:
+        message:
+          type: string
+          description: Commit message
+        content:
+          type: string
+          description: Base64-encoded file content
+        sha:
+          type: string
+          description: SHA of existing file (required for updates)
+        branch:
+          type: string
+
+    PutFileResponse:
+      type: object
+      properties:
+        content:
+          $ref: '#/components/schemas/FileContent'
+        commit:
+          type: object
+          properties:
+            sha:
+              type: string
+            message:
+              type: string
+
+    CardElementStyle:
+      type: object
+      properties:
+        fontSize:
+          type: number
+        fontWeight:
+          type: string
+        color:
+          type: string
+        iconName:
+          type: string
+        strokeWidth:
+          type: number
+        svgData:
+          type: string
+          description: Base64 data URI of SVG
+        imageUrl:
+          type: string
+          format: uri
+
+    CardElement:
+      type: object
+      required: [id, type, tag, x, y, width, height, style]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [text, icon, image, hline, vline, svg]
+        tag:
+          type: string
+          description: "Tag name, e.g. {{name}}"
+        x:
+          type: number
+        y:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        style:
+          $ref: '#/components/schemas/CardElementStyle'
+
+    CardTemplate:
+      type: object
+      required: [id, name, width, height, backgroundColor, elements]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        width:
+          type: number
+          example: 350
+        height:
+          type: number
+          example: 490
+        backgroundImage:
+          type: string
+          description: Base64 data URI or URL
+        backgroundColor:
+          type: string
+          example: "hsl(220 18% 13%)"
+        elements:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardElement'
+
+    CardRow:
+      type: object
+      additionalProperties:
+        type: string
+      description: Key-value pairs matching template tag names
+
+    CardProject:
+      type: object
+      required: [id, name, description, createdAt, rows]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        template:
+          $ref: '#/components/schemas/CardTemplate'
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardRow'
+
+    SaveProjectRequest:
+      type: object
+      required: [repo, project]
+      properties:
+        repo:
+          type: string
+          description: "Full repo name (owner/repo)"
+          example: octocat/my-cards
+        branch:
+          type: string
+          description: Target branch (defaults to repo default)
+        project:
+          $ref: '#/components/schemas/CardProject'
+
+    SaveProjectResponse:
+      type: object
+      properties:
+        path:
+          type: string
+          description: "Repo path prefix where files were saved"
+          example: cardforge/MyProject
+        fileCount:
+          type: integer
+          description: Number of files committed
