@@ -1,0 +1,1440 @@
+@prefix tcg:    <https://tcg-schema.org/core#> .
+@prefix schema: <https://schema.org/> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl:    <http://www.w3.org/2002/07/owl#> .
+
+<https://tcg-schema.org/core>
+  a owl:Ontology ;
+  rdfs:label "TCG Schema — Core"@en ;
+  rdfs:comment "Core vocabulary for card games / trading card games / collectible card games, aligned with schema.org. Includes cards vs printings, sets, decks, formats, legality, mechanics, counters, resources, metagame archetypes/matchups, and LLM-friendly descriptors."@en ;
+  owl:imports <https://schema.org/> .
+
+################
+# CORE CLASSES #
+################
+
+tcg:CardGame a rdfs:Class ;
+  rdfs:label "CardGame"@en ;
+  rdfs:subClassOf schema:Game .
+
+tcg:CardSet a rdfs:Class ;
+  rdfs:label "CardSet"@en ;
+  rdfs:subClassOf schema:CreativeWork .
+
+tcg:ProductRelease a rdfs:Class ;
+  rdfs:label "ProductRelease"@en ;
+  rdfs:subClassOf schema:Product .
+
+tcg:Card a rdfs:Class ;
+  rdfs:label "Card"@en ;
+  rdfs:comment "Abstract card identity (concept), independent from specific printings."@en ;
+  rdfs:subClassOf schema:CreativeWork .
+
+tcg:CardFace a rdfs:Class ;
+  rdfs:label "CardFace"@en ;
+  rdfs:comment "A face/part of a card (double-faced, split, modal, etc.)."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:CardPrinting a rdfs:Class ;
+  rdfs:label "CardPrinting"@en ;
+  rdfs:comment "A specific printing/variant (set, number, language, finish, etc.)."@en ;
+  rdfs:subClassOf schema:Product .
+
+tcg:Deck a rdfs:Class ;
+  rdfs:label "Deck"@en ;
+  rdfs:subClassOf schema:CreativeWork .
+
+tcg:DeckListEntry a rdfs:Class ;
+  rdfs:label "DeckListEntry"@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:Format a rdfs:Class ;
+  rdfs:label "Format"@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:Legality a rdfs:Class ;
+  rdfs:label "Legality"@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:Mechanic a rdfs:Class ;
+  rdfs:label "Mechanic"@en ;
+  rdfs:comment "Named mechanic (keyword ability/action, resource system concept, etc.)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:Ability a rdfs:Class ;
+  rdfs:label "Ability"@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:Effect a rdfs:Class ;
+  rdfs:label "Effect"@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:CounterType a rdfs:Class ;
+  rdfs:label "CounterType"@en ;
+  rdfs:comment "Counters as game objects (e.g., +1/+1, poison, charge)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:CounterEffect a rdfs:Class ;
+  rdfs:label "CounterEffect"@en ;
+  rdfs:subClassOf tcg:Effect .
+
+tcg:TargetSelector a rdfs:Class ;
+  rdfs:label "TargetSelector"@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:Condition a rdfs:Class ;
+  rdfs:label "Condition"@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:Role a rdfs:Class ;
+  rdfs:label "Role"@en ;
+  rdfs:comment "Functional role of a card in deckbuilding (removal, finisher, engine, etc.)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+
+############################
+# PRE-GAME STRUCTURE (CORE)
+############################
+
+tcg:PreGameStructure a rdfs:Class ;
+  rdfs:label "PreGameStructure"@en ;
+  rdfs:comment "Defines the ordered procedure executed before the first turn begins (setup, shuffle, draw, mulligan, etc.)."@en ;
+  rdfs:subClassOf schema:CreativeWork .
+
+tcg:PreGameStep a rdfs:Class ;
+  rdfs:label "PreGameStep"@en ;
+  rdfs:comment "A single ordered step in the pre-game procedure."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:hasPreGameStructure a rdf:Property ;
+  rdfs:label "hasPreGameStructure"@en ;
+  rdfs:comment "Associates a pre-game structure with a game or format."@en ;
+  rdfs:domain schema:Thing ;     # tcg:CardGame or tcg:Format
+  rdfs:range tcg:PreGameStructure .
+
+tcg:preGameStep a rdf:Property ;
+  rdfs:label "preGameStep"@en ;
+  rdfs:comment "Steps that compose a pre-game structure (use orderIndex for ordering)."@en ;
+  rdfs:domain tcg:PreGameStructure ;
+  rdfs:range tcg:PreGameStep .
+
+tcg:orderIndex a rdf:Property ;
+  rdfs:label "orderIndex"@en ;
+  rdfs:comment "Order within the procedure (0..n)."@en ;
+  rdfs:domain schema:Intangible ;
+  rdfs:range xsd:integer .
+
+tcg:stepSummary a rdf:Property ;
+  rdfs:label "stepSummary"@en ;
+  rdfs:comment "Short human/LLM-friendly summary of the step."@en ;
+  rdfs:domain tcg:PreGameStep ;
+  rdfs:range xsd:string .
+
+tcg:stepKind a rdf:Property ;
+  rdfs:label "stepKind"@en ;
+  rdfs:comment "A normalized category for the step (shuffle, presentDeck, drawOpeningHand, mulligan, chooseFirstPlayer, setupZone, revealInfo, etc.)."@en ;
+  rdfs:domain tcg:PreGameStep ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:involvesZone a rdf:Property ;
+  rdfs:label "involvesZone"@en ;
+  rdfs:comment "Zone involved in this step (deck, hand, battlefield, etc.), as a term."@en ;
+  rdfs:domain tcg:PreGameStep ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:performedByRole a rdf:Property ;
+  rdfs:label "performedByRole"@en ;
+  rdfs:comment "Who performs/initiates the step (eachPlayer, startingPlayer, nonStartingPlayer, activePlayer, judge, simultaneous, etc.)."@en ;
+  rdfs:domain tcg:PreGameStep ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:repeatable a rdf:Property ;
+  rdfs:label "repeatable"@en ;
+  rdfs:comment "Whether this step may repeat (e.g., mulligan loops)."@en ;
+  rdfs:domain schema:Intangible ;
+  rdfs:range xsd:boolean .
+
+
+#############################
+# RESOURCES / COSTS (ABSTRACT)
+#############################
+
+tcg:ResourceSystem a rdfs:Class ;
+  rdfs:label "ResourceSystem"@en ;
+  rdfs:comment "A game's resource system used to pay costs (mana, ink, energy, etc.)."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:ResourceType a rdfs:Class ;
+  rdfs:label "ResourceType"@en ;
+  rdfs:comment "A resource type within a system (colors, inks, energies, elements, etc.)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:ResourceCost a rdfs:Class ;
+  rdfs:label "ResourceCost"@en ;
+  rdfs:comment "A cost expressed in a resource system, structured and/or textual."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:ResourceCostComponent a rdfs:Class ;
+  rdfs:label "ResourceCostComponent"@en ;
+  rdfs:comment "One component of a cost: amount + optional resource type."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+################
+# PROPERTIES   #
+################
+
+# Common linking
+tcg:inGame a rdf:Property ;
+  rdfs:label "inGame"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range tcg:CardGame .
+
+tcg:inFormat a rdf:Property ;
+  rdfs:label "inFormat"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range tcg:Format .
+
+# Sets / releases
+tcg:setCode a rdf:Property ;
+  rdfs:label "setCode"@en ;
+  rdfs:domain tcg:CardSet ;
+  rdfs:range xsd:string .
+
+tcg:setType a rdf:Property ;
+  rdfs:label "setType"@en ;
+  rdfs:domain tcg:CardSet ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:forSet a rdf:Property ;
+  rdfs:label "forSet"@en ;
+  rdfs:domain tcg:ProductRelease ;
+  rdfs:range tcg:CardSet .
+
+tcg:hasCardSet a rdf:Property ;
+  rdfs:label "hasCardSet"@en ;
+  rdfs:domain tcg:CardGame ;
+  rdfs:range tcg:CardSet .
+
+tcg:hasFormat a rdf:Property ;
+  rdfs:label "hasFormat"@en ;
+  rdfs:domain tcg:CardGame ;
+  rdfs:range tcg:Format .
+
+# Card identity vs printing
+tcg:hasPrinting a rdf:Property ;
+  rdfs:label "hasPrinting"@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:CardPrinting .
+
+tcg:printsCard a rdf:Property ;
+  rdfs:label "printsCard"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range tcg:Card .
+
+tcg:inSet a rdf:Property ;
+  rdfs:label "inSet"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range tcg:CardSet .
+
+tcg:collectorNumber a rdf:Property ;
+  rdfs:label "collectorNumber"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range xsd:string .
+
+tcg:rarity a rdf:Property ;
+  rdfs:label "rarity"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:language a rdf:Property ;
+  rdfs:label "language"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range xsd:string .
+
+tcg:finish a rdf:Property ;
+  rdfs:label "finish"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:isFoil a rdf:Property ;
+  rdfs:label "isFoil"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range xsd:boolean .
+
+tcg:artwork a rdf:Property ;
+  rdfs:label "artwork"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range schema:ImageObject .
+
+tcg:artist a rdf:Property ;
+  rdfs:label "artist"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range schema:Person .
+
+tcg:reprintOf a rdf:Property ;
+  rdfs:label "reprintOf"@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range tcg:CardPrinting .
+
+# Faces
+tcg:hasFace a rdf:Property ;
+  rdfs:label "hasFace"@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:CardFace .
+
+tcg:faceName a rdf:Property ;
+  rdfs:label "faceName"@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range xsd:string .
+
+tcg:faceText a rdf:Property ;
+  rdfs:label "faceText"@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range xsd:string .
+
+# Mechanics / roles / abilities
+tcg:hasMechanic a rdf:Property ;
+  rdfs:label "hasMechanic"@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:Mechanic .
+
+tcg:mechanicKind a rdf:Property ;
+  rdfs:label "mechanicKind"@en ;
+  rdfs:domain tcg:Mechanic ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:rulesReference a rdf:Property ;
+  rdfs:label "rulesReference"@en ;
+  rdfs:comment "Reference to rules docs/sections as CreativeWork or URL."@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range schema:CreativeWork .
+
+tcg:hasRole a rdf:Property ;
+  rdfs:label "hasRole"@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:Role .
+
+tcg:hasAbility a rdf:Property ;
+  rdfs:label "hasAbility"@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:Ability .
+
+tcg:abilityText a rdf:Property ;
+  rdfs:label "abilityText"@en ;
+  rdfs:domain tcg:Ability ;
+  rdfs:range xsd:string .
+
+tcg:abilityType a rdf:Property ;
+  rdfs:label "abilityType"@en ;
+  rdfs:domain tcg:Ability ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:hasEffect a rdf:Property ;
+  rdfs:label "hasEffect"@en ;
+  rdfs:domain tcg:Ability ;
+  rdfs:range tcg:Effect .
+
+tcg:usesMechanic a rdf:Property ;
+  rdfs:label "usesMechanic"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range tcg:Mechanic .
+
+# Counters
+tcg:usesCounterType a rdf:Property ;
+  rdfs:label "usesCounterType"@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:CounterType .
+
+tcg:counterScope a rdf:Property ;
+  rdfs:label "counterScope"@en ;
+  rdfs:domain tcg:CounterType ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:counterSemantic a rdf:Property ;
+  rdfs:label "counterSemantic"@en ;
+  rdfs:domain tcg:CounterType ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:counterOperation a rdf:Property ;
+  rdfs:label "counterOperation"@en ;
+  rdfs:domain tcg:CounterEffect ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:counterType a rdf:Property ;
+  rdfs:label "counterType"@en ;
+  rdfs:domain tcg:CounterEffect ;
+  rdfs:range tcg:CounterType .
+
+tcg:amount a rdf:Property ;
+  rdfs:label "amount"@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range schema:Number .
+
+tcg:targetSelector a rdf:Property ;
+  rdfs:label "targetSelector"@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range tcg:TargetSelector .
+
+tcg:selectorText a rdf:Property ;
+  rdfs:label "selectorText"@en ;
+  rdfs:domain tcg:TargetSelector ;
+  rdfs:range xsd:string .
+
+tcg:condition a rdf:Property ;
+  rdfs:label "condition"@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range tcg:Condition .
+
+# Resources / costs (abstract)
+tcg:hasResourceSystem a rdf:Property ;
+  rdfs:label "hasResourceSystem"@en ;
+  rdfs:domain tcg:CardGame ;
+  rdfs:range tcg:ResourceSystem .
+
+tcg:resourceSystem a rdf:Property ;
+  rdfs:label "resourceSystem"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range tcg:ResourceSystem .
+
+tcg:hasCost a rdf:Property ;
+  rdfs:label "hasCost"@en ;
+  rdfs:comment "Generic hook: costs can belong to cards (play/cast) or abilities (activation/additional costs)."@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range tcg:ResourceCost .
+
+tcg:primaryCost a rdf:Property ;
+  rdfs:label "primaryCost"@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:ResourceCost .
+
+tcg:altCost a rdf:Property ;
+  rdfs:label "altCost"@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:ResourceCost .
+
+tcg:costKind a rdf:Property ;
+  rdfs:label "costKind"@en ;
+  rdfs:domain tcg:ResourceCost ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:costText a rdf:Property ;
+  rdfs:label "costText"@en ;
+  rdfs:comment "Human-readable cost in game notation (kept even when structured components exist)."@en ;
+  rdfs:domain tcg:ResourceCost ;
+  rdfs:range xsd:string .
+
+tcg:costComponent a rdf:Property ;
+  rdfs:label "costComponent"@en ;
+  rdfs:domain tcg:ResourceCost ;
+  rdfs:range tcg:ResourceCostComponent .
+
+tcg:resourceType a rdf:Property ;
+  rdfs:label "resourceType"@en ;
+  rdfs:domain tcg:ResourceCostComponent ;
+  rdfs:range tcg:ResourceType .
+
+tcg:amountInteger a rdf:Property ;
+  rdfs:label "amountInteger"@en ;
+  rdfs:domain tcg:ResourceCostComponent ;
+  rdfs:range xsd:integer .
+
+tcg:amountText a rdf:Property ;
+  rdfs:label "amountText"@en ;
+  rdfs:domain tcg:ResourceCostComponent ;
+  rdfs:range xsd:string .
+
+# Decklists
+tcg:deckList a rdf:Property ;
+  rdfs:label "deckList"@en ;
+  rdfs:domain tcg:Deck ;
+  rdfs:range tcg:DeckListEntry .
+
+tcg:card a rdf:Property ;
+  rdfs:label "card"@en ;
+  rdfs:domain tcg:DeckListEntry ;
+  rdfs:range tcg:Card .
+
+tcg:cardPrinting a rdf:Property ;
+  rdfs:label "cardPrinting"@en ;
+  rdfs:domain tcg:DeckListEntry ;
+  rdfs:range tcg:CardPrinting .
+
+tcg:quantity a rdf:Property ;
+  rdfs:label "quantity"@en ;
+  rdfs:domain tcg:DeckListEntry ;
+  rdfs:range xsd:integer .
+
+tcg:zoneRole a rdf:Property ;
+  rdfs:label "zoneRole"@en ;
+  rdfs:comment "main / sideboard / commander / extraDeck / etc."@en ;
+  rdfs:domain tcg:DeckListEntry ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:deckFormat a rdf:Property ;
+  rdfs:label "deckFormat"@en ;
+  rdfs:domain tcg:Deck ;
+  rdfs:range tcg:Format .
+
+tcg:deckArchetype a rdf:Property ;
+  rdfs:label "deckArchetype"@en ;
+  rdfs:domain tcg:Deck ;
+  rdfs:range tcg:Archetype .
+
+# Legality
+tcg:inFormatLegality a rdf:Property ;
+  rdfs:label "inFormatLegality"@en ;
+  rdfs:domain tcg:Legality ;
+  rdfs:range tcg:Format .
+
+tcg:appliesTo a rdf:Property ;
+  rdfs:label "appliesTo"@en ;
+  rdfs:comment "Applies to a Card or CardPrinting (or other relevant entity)."@en ;
+  rdfs:domain tcg:Legality ;
+  rdfs:range schema:Thing .
+
+tcg:status a rdf:Property ;
+  rdfs:label "status"@en ;
+  rdfs:domain tcg:Legality ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:effectiveDate a rdf:Property ;
+  rdfs:label "effectiveDate"@en ;
+  rdfs:domain tcg:Legality ;
+  rdfs:range xsd:date .
+
+tcg:source a rdf:Property ;
+  rdfs:label "source"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range schema:URL .
+
+# Metagame
+tcg:strategyTag a rdf:Property ;
+  rdfs:label "strategyTag"@en ;
+  rdfs:domain tcg:Archetype ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:signatureCards a rdf:Property ;
+  rdfs:label "signatureCards"@en ;
+  rdfs:domain tcg:Archetype ;
+  rdfs:range schema:Thing .
+
+tcg:sideA a rdf:Property ;
+  rdfs:label "sideA"@en ;
+  rdfs:domain tcg:Matchup ;
+  rdfs:range tcg:Archetype .
+
+tcg:sideB a rdf:Property ;
+  rdfs:label "sideB"@en ;
+  rdfs:domain tcg:Matchup ;
+  rdfs:range tcg:Archetype .
+
+tcg:advantage a rdf:Property ;
+  rdfs:label "advantage"@en ;
+  rdfs:domain tcg:Matchup ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:winRate a rdf:Property ;
+  rdfs:label "winRate"@en ;
+  rdfs:domain tcg:Matchup ;
+  rdfs:range xsd:decimal .
+
+tcg:sampleSize a rdf:Property ;
+  rdfs:label "sampleSize"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range xsd:integer .
+
+tcg:notes a rdf:Property ;
+  rdfs:label "notes"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range xsd:string .
+
+tcg:counterAgent a rdf:Property ;
+  rdfs:label "counterAgent"@en ;
+  rdfs:domain tcg:CounterClaim ;
+  rdfs:range schema:Thing .
+
+tcg:counterTarget a rdf:Property ;
+  rdfs:label "counterTarget"@en ;
+  rdfs:domain tcg:CounterClaim ;
+  rdfs:range schema:Thing .
+
+tcg:confidence a rdf:Property ;
+  rdfs:label "confidence"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range xsd:decimal .
+
+tcg:effectSize a rdf:Property ;
+  rdfs:label "effectSize"@en ;
+  rdfs:domain tcg:CounterClaim ;
+  rdfs:range xsd:decimal .
+
+tcg:evidence a rdf:Property ;
+  rdfs:label "evidence"@en ;
+  rdfs:domain tcg:CounterClaim ;
+  rdfs:range tcg:EvidenceBundle .
+
+tcg:method a rdf:Property ;
+  rdfs:label "method"@en ;
+  rdfs:domain tcg:EvidenceBundle ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:timeWindowStart a rdf:Property ;
+  rdfs:label "timeWindowStart"@en ;
+  rdfs:domain tcg:EvidenceBundle ;
+  rdfs:range xsd:date .
+
+tcg:timeWindowEnd a rdf:Property ;
+  rdfs:label "timeWindowEnd"@en ;
+  rdfs:domain tcg:EvidenceBundle ;
+  rdfs:range xsd:date .
+
+# Descriptors (LLM interpretation layer)
+tcg:hasDescriptor a rdf:Property ;
+  rdfs:label "hasDescriptor"@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range tcg:CardDescriptor .
+
+tcg:describesCard a rdf:Property ;
+  rdfs:label "describesCard"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:Card .
+
+tcg:descriptorType a rdf:Property ;
+  rdfs:label "descriptorType"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:DescriptorType .
+
+tcg:descriptorValueTerm a rdf:Property ;
+  rdfs:label "descriptorValueTerm"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:descriptorValueNumber a rdf:Property ;
+  rdfs:label "descriptorValueNumber"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range xsd:decimal .
+
+tcg:descriptorValueText a rdf:Property ;
+  rdfs:label "descriptorValueText"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range xsd:string .
+
+tcg:descriptorInFormat a rdf:Property ;
+  rdfs:label "descriptorInFormat"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:Format .
+
+tcg:descriptorInGame a rdf:Property ;
+  rdfs:label "descriptorInGame"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:CardGame .
+
+tcg:descriptorVsArchetype a rdf:Property ;
+  rdfs:label "descriptorVsArchetype"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:Archetype .
+
+tcg:targetsMechanic a rdf:Property ;
+  rdfs:label "targetsMechanic"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:Mechanic .
+
+tcg:targetsRole a rdf:Property ;
+  rdfs:label "targetsRole"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:Role .
+
+tcg:targetsCounterType a rdf:Property ;
+  rdfs:label "targetsCounterType"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:CounterType .
+
+tcg:polarity a rdf:Property ;
+  rdfs:label "polarity"@en ;
+  rdfs:comment "Positive/negative/neutral; e.g., helpsOwnPlan / disruptsOpponent."@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:extractionMethod a rdf:Property ;
+  rdfs:label "extractionMethod"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:ExtractionMethod .
+
+tcg:descriptorEvidence a rdf:Property ;
+  rdfs:label "descriptorEvidence"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range tcg:DescriptorEvidence .
+
+tcg:createdAt a rdf:Property ;
+  rdfs:label "createdAt"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range xsd:dateTime .
+
+tcg:createdBy a rdf:Property ;
+  rdfs:label "createdBy"@en ;
+  rdfs:domain tcg:CardDescriptor ;
+  rdfs:range schema:Organization .
+
+
+########################
+# RULINGS (CORE)
+########################
+
+tcg:Ruling a rdfs:Class ;
+  rdfs:label "Ruling"@en ;
+  rdfs:comment "A dated official or community ruling/clarification about how a card (or printing) works. Not the full rules text; an interpretation/clarification with provenance."@en ;
+  rdfs:subClassOf schema:CreativeWork .
+
+# What the ruling is about
+tcg:rulingAppliesTo a rdf:Property ;
+  rdfs:label "rulingAppliesTo"@en ;
+  rdfs:comment "The entity the ruling is about (typically a Card; sometimes a specific Printing)."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range schema:Thing .
+
+# Optional scoping
+tcg:rulingInGame a rdf:Property ;
+  rdfs:label "rulingInGame"@en ;
+  rdfs:comment "Game context for the ruling (useful when the same schema covers multiple games)."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range tcg:CardGame .
+
+tcg:rulingInFormat a rdf:Property ;
+  rdfs:label "rulingInFormat"@en ;
+  rdfs:comment "Format context, if the ruling is format-dependent."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range tcg:Format .
+
+# The content and when it applies
+tcg:rulingText a rdf:Property ;
+  rdfs:label "rulingText"@en ;
+  rdfs:comment "Human-readable ruling statement."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range xsd:string .
+
+tcg:rulingDate a rdf:Property ;
+  rdfs:label "rulingDate"@en ;
+  rdfs:comment "Date the ruling was issued/published."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range xsd:date .
+
+tcg:effectiveDate a rdf:Property ;
+  rdfs:label "effectiveDate"@en ;
+  rdfs:comment "When the ruling takes effect (if different from rulingDate). Reuses the same name as legality, but here it applies to rulings too."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range xsd:date .
+
+# Provenance
+tcg:rulingSource a rdf:Property ;
+  rdfs:label "rulingSource"@en ;
+  rdfs:comment "URL or document reference for the ruling (official database, FAQ, release notes, etc.)."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range schema:URL .
+
+tcg:rulingAuthority a rdf:Property ;
+  rdfs:label "rulingAuthority"@en ;
+  rdfs:comment "Who issued/maintains the ruling (publisher, rules committee, official judge program, etc.)."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range schema:Organization .
+
+# Versioning / supersession
+tcg:supersedesRuling a rdf:Property ;
+  rdfs:label "supersedesRuling"@en ;
+  rdfs:comment "This ruling supersedes another ruling (newer clarification, errata-driven change, etc.)."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range tcg:Ruling .
+
+tcg:supersededByRuling a rdf:Property ;
+  rdfs:label "supersededByRuling"@en ;
+  rdfs:comment "Inverse link: this ruling has been superseded by a newer one."@en ;
+  rdfs:domain tcg:Ruling ;
+  rdfs:range tcg:Ruling .
+
+# Convenience: attach rulings to cards
+tcg:hasRuling a rdf:Property ;
+  rdfs:label "hasRuling"@en ;
+  rdfs:comment "Links a card (or printing) to a ruling."@en ;
+  rdfs:domain schema:Thing ;
+  rdfs:range tcg:Ruling .
+
+tcg:printingFlavorText a rdf:Property ;
+  rdfs:label "printingFlavorText"@en ;
+  rdfs:comment "Flavor text as printed on this specific printing/language."@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range xsd:string .
+
+tcg:printingRulesText a rdf:Property ;
+  rdfs:label "printingRulesText"@en ;
+  rdfs:comment "Rules/game text as printed on this printing (may differ by language/templating; canonical rules stay on tcg:Card)."@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range xsd:string .
+
+tcg:printingReminderText a rdf:Property ;
+  rdfs:label "printingReminderText"@en ;
+  rdfs:comment "Reminder text as printed on this printing."@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range xsd:string .
+
+############################
+# CARD TEXT FIELDS (CORE)
+############################
+
+tcg:rulesText a rdf:Property ;
+  rdfs:label "rulesText"@en ;
+  rdfs:comment "Rules/game text that affects gameplay. Also known as oracle text / ability text / effect text, depending on the game."@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range xsd:string .
+
+tcg:flavorText a rdf:Property ;
+  rdfs:label "flavorText"@en ;
+  rdfs:comment "Non-rules narrative text printed on the card (no gameplay effect)."@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range xsd:string .
+
+tcg:reminderText a rdf:Property ;
+  rdfs:label "reminderText"@en ;
+  rdfs:comment "Optional explanatory text that clarifies a keyword/ability but is not itself rules text (may be absent or vary by printing/language)."@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range xsd:string .
+
+############################
+# OPTIONAL: FACE-SCOPED TEXT
+############################
+# For split / double-faced / modal cards, you often want text per face.
+
+tcg:faceRulesText a rdf:Property ;
+  rdfs:label "faceRulesText"@en ;
+  rdfs:comment "Rules/game text for a specific card face."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range xsd:string .
+
+tcg:faceFlavorText a rdf:Property ;
+  rdfs:label "faceFlavorText"@en ;
+  rdfs:comment "Flavor text for a specific card face."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range xsd:string .
+
+tcg:faceReminderText a rdf:Property ;
+  rdfs:label "faceReminderText"@en ;
+  rdfs:comment "Reminder text for a specific card face."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range xsd:string .
+
+
+tcg:typeLine a rdf:Property ;
+  rdfs:label "typeLine"@en ;
+  rdfs:comment "Human-readable type line as printed (useful when parsing is incomplete)."@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range xsd:string .
+
+########################################
+# Card Types                           #
+########################################
+
+tcg:CardType a rdfs:Class ;
+  rdfs:label "CardType"@en ;
+  rdfs:comment "A card type term defined by a specific game (Creature, Action, Item, Spell, Location, etc.)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:CardSubtype a rdfs:Class ;
+  rdfs:label "CardSubtype"@en ;
+  rdfs:comment "A card subtype term defined by a specific game (Elf, Pirate, Item—Weapon, etc.)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:cardType a rdf:Property ;
+  rdfs:label "cardType"@en ;
+  rdfs:comment "Primary type(s) of a card."@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:CardType .
+
+tcg:cardSubtype a rdf:Property ;
+  rdfs:label "cardSubtype"@en ;
+  rdfs:comment "Subtype(s) of a card."@en ;
+  rdfs:domain tcg:Card ;
+  rdfs:range tcg:CardSubtype .
+
+########################################
+# Mechanics                            #
+########################################
+
+tcg:mechanicKinds a schema:DefinedTermSet ;
+  schema:name "TCG Mechanic Kinds" .
+
+tcg:KeywordAbility a schema:DefinedTerm ;
+  schema:name "keywordAbility" ;
+  schema:inDefinedTermSet tcg:mechanicKinds .
+
+tcg:KeywordAction a schema:DefinedTerm ;
+  schema:name "keywordAction" ;
+  schema:inDefinedTermSet tcg:mechanicKinds .
+
+tcg:StaticAbility a schema:DefinedTerm ;
+  schema:name "staticAbility" ;
+  schema:inDefinedTermSet tcg:mechanicKinds .
+
+tcg:TriggeredAbility a schema:DefinedTerm ;
+  schema:name "triggeredAbility" ;
+  schema:inDefinedTermSet tcg:mechanicKinds .
+
+tcg:ActivatedAbility a schema:DefinedTerm ;
+  schema:name "activatedAbility" ;
+  schema:inDefinedTermSet tcg:mechanicKinds .
+
+
+tcg:effectTypes a schema:DefinedTermSet ;
+  schema:name "TCG Effect Types" .
+
+tcg:Draw a tcg:EffectType ; schema:name "draw" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:Discard a tcg:EffectType ; schema:name "discard" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:Damage a tcg:EffectType ; schema:name "damage" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:Heal a tcg:EffectType ; schema:name "heal" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:Search a tcg:EffectType ; schema:name "search" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:Shuffle a tcg:EffectType ; schema:name "shuffle" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:Mill a tcg:EffectType ; schema:name "mill" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:CreateToken a tcg:EffectType ; schema:name "createToken" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:ModifyStats a tcg:EffectType ; schema:name "modifyStats" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:Prevent a tcg:EffectType ; schema:name "prevent" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:CounterAction a tcg:EffectType ; schema:name "counterAction" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:Destroy a tcg:EffectType ; schema:name "destroy" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:ExileRemove a tcg:EffectType ; schema:name "exileRemove" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:ReturnToZone a tcg:EffectType ; schema:name "returnToZone" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:ResourceGain a tcg:EffectType ; schema:name "resourceGain" ; schema:inDefinedTermSet tcg:effectTypes .
+tcg:ResourceSpend a tcg:EffectType ; schema:name "resourceSpend" ; schema:inDefinedTermSet tcg:effectTypes .
+
+########################################
+# Effect Types                         #
+########################################
+
+tcg:EffectType a rdfs:Class ;
+  rdfs:label "EffectType"@en ;
+  rdfs:comment "A standardized classification of an effect (draw, damage, heal, search, discard, createToken, etc.)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:effectType a rdf:Property ;
+  rdfs:label "effectType"@en ;
+  rdfs:comment "Classifies an Effect using an EffectType term."@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range tcg:EffectType .
+
+tcg:effectText a rdf:Property ;
+  rdfs:label "effectText"@en ;
+  rdfs:comment "Human-readable description of the effect chunk."@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range xsd:string .
+
+tcg:duration a rdf:Property ;
+  rdfs:label "duration"@en ;
+  rdfs:comment "Duration of the effect (untilEndOfTurn, permanent, whileCondition, etc.)."@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:targetsZone a rdf:Property ;
+  rdfs:label "targetsZone"@en ;
+  rdfs:comment "Zone context targeted/affected by the effect (hand, deck, battlefield, discard, etc.). Game-specific zones can extend this."@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range schema:DefinedTerm .
+
+########################################
+# General Rules                        #
+########################################
+
+tcg:defaultHandSize a rdf:Property ;
+  rdfs:label "defaultHandSize"@en ;
+  rdfs:comment "Default starting hand size for a game/format."@en ;
+  rdfs:domain schema:Thing ;   # CardGame or Format
+  rdfs:range xsd:integer .
+
+tcg:maxHandSize a rdf:Property ;
+  rdfs:label "maxHandSize"@en ;
+  rdfs:comment "Default maximum hand size (limit). If absent, game may have no limit or uses special rules."@en ;
+  rdfs:domain schema:Thing ;   # CardGame or Format
+  rdfs:range xsd:integer .
+
+tcg:handSizeEnforcement a rdf:Property ;
+  rdfs:label "handSizeEnforcement"@en ;
+  rdfs:comment "How hand size limit is enforced (discardDownToLimit, noLimit, endOfTurnCheck, continuousCheck, etc.)."@en ;
+  rdfs:domain schema:Thing ;   # CardGame or Format
+  rdfs:range schema:DefinedTerm .
+
+########################################
+# CARD FACE ARTWORK (CORE)
+########################################
+
+tcg:faceArtwork a rdf:Property ;
+  rdfs:label "faceArtwork"@en ;
+  rdfs:comment "Artwork image for a specific card face."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range schema:ImageObject .
+
+tcg:faceArtist a rdf:Property ;
+  rdfs:label "faceArtist"@en ;
+  rdfs:comment "Primary artist credited for the artwork on this card face."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range schema:Person .
+
+tcg:faceArtCreditText a rdf:Property ;
+  rdfs:label "faceArtCreditText"@en ;
+  rdfs:comment "Artist/credit line exactly as printed (useful for localization or multiple credits)."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range xsd:string .
+
+tcg:faceIllustrationId a rdf:Property ;
+  rdfs:label "faceIllustrationId"@en ;
+  rdfs:comment "Identifier for the illustration on this face, if provided by the data source (e.g., an 'illustration_id')."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range xsd:string .
+
+tcg:faceArtVariant a rdf:Property ;
+  rdfs:label "faceArtVariant"@en ;
+  rdfs:comment "Art variant label (alt art, borderless, showcase, promo art, etc.) when scoped to a face."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:faceCopyrightText a rdf:Property ;
+  rdfs:label "faceCopyrightText"@en ;
+  rdfs:comment "Copyright/legal line associated with the face artwork, if present."@en ;
+  rdfs:domain tcg:CardFace ;
+  rdfs:range xsd:string .
+
+tcg:printingArtwork a rdf:Property ;
+  rdfs:label "printingArtwork"@en ;
+  rdfs:comment "Primary artwork image for this specific printing (when not modeled per-face)."@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range schema:ImageObject .
+
+tcg:printingArtist a rdf:Property ;
+  rdfs:label "printingArtist"@en ;
+  rdfs:comment "Artist credited on this specific printing."@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range schema:Person .
+
+tcg:artVariant a rdf:Property ;
+  rdfs:label "artVariant"@en ;
+  rdfs:comment "Art variant label for this printing (alt art, borderless, etc.)."@en ;
+  rdfs:domain tcg:CardPrinting ;
+  rdfs:range schema:DefinedTerm .
+
+
+############################
+# TURN STRUCTURE (CORE)
+############################
+
+tcg:TurnStructure a rdfs:Class ;
+  rdfs:label "TurnStructure"@en ;
+  rdfs:comment "Defines how a turn is structured for a game or format (phases/steps and their order)."@en ;
+  rdfs:subClassOf schema:CreativeWork .
+
+tcg:TurnPart a rdfs:Class ;
+  rdfs:label "TurnPart"@en ;
+  rdfs:comment "Abstract superclass for parts of a turn (phase or step)."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:TurnPhase a rdfs:Class ;
+  rdfs:label "TurnPhase"@en ;
+  rdfs:comment "A phase within a turn (e.g., Main Phase, Combat Phase)."@en ;
+  rdfs:subClassOf tcg:TurnPart .
+
+tcg:TurnStep a rdfs:Class ;
+  rdfs:label "TurnStep"@en ;
+  rdfs:comment "A step within a phase (e.g., Draw Step, Declare Attackers Step)."@en ;
+  rdfs:subClassOf tcg:TurnPart .
+
+# Attach a turn structure to a game or format (format can override game)
+tcg:hasTurnStructure a rdf:Property ;
+  rdfs:label "hasTurnStructure"@en ;
+  rdfs:comment "Associates a turn structure to a game or a format."@en ;
+  rdfs:domain schema:Thing ;     # tcg:CardGame or tcg:Format
+  rdfs:range tcg:TurnStructure .
+
+# The ordered parts of the turn
+tcg:turnPart a rdf:Property ;
+  rdfs:label "turnPart"@en ;
+  rdfs:comment "Lists phases/steps that compose a turn structure (use orderIndex for ordering)."@en ;
+  rdfs:domain tcg:TurnStructure ;
+  rdfs:range tcg:TurnPart .
+
+tcg:orderIndex a rdf:Property ;
+  rdfs:label "orderIndex"@en ;
+  rdfs:comment "Order of a turn part within its parent structure/phase (0..n)."@en ;
+  rdfs:domain tcg:TurnPart ;
+  rdfs:range xsd:integer .
+
+# Phase contains steps (optional; some games have phases only)
+tcg:hasStep a rdf:Property ;
+  rdfs:label "hasStep"@en ;
+  rdfs:comment "Steps contained in a phase (use orderIndex on steps)."@en ;
+  rdfs:domain tcg:TurnPhase ;
+  rdfs:range tcg:TurnStep .
+
+# Semantics that help “engine-ish” reasoning without becoming a full simulator
+tcg:activePlayerRole a rdf:Property ;
+  rdfs:label "activePlayerRole"@en ;
+  rdfs:comment "Describes who is considered the active player during this part (activePlayer, nonActivePlayer, simultaneous, etc.)."@en ;
+  rdfs:domain tcg:TurnPart ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:priorityModel a rdf:Property ;
+  rdfs:label "priorityModel"@en ;
+  rdfs:comment "How players may act during this part (none, alternatingPriority, windowsOnly, simultaneous, etc.)."@en ;
+  rdfs:domain tcg:TurnPart ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:partDuration a rdf:Property ;
+  rdfs:label "partDuration"@en ;
+  rdfs:comment "Duration model of this part (untilEndOfStep, untilEndOfPhase, instantaneous, continuous, etc.)."@en ;
+  rdfs:domain tcg:TurnPart ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:repeatable a rdf:Property ;
+  rdfs:label "repeatable"@en ;
+  rdfs:comment "Whether this part can repeat within a single turn under normal rules."@en ;
+  rdfs:domain tcg:TurnPart ;
+  rdfs:range xsd:boolean .
+
+# Optional: a short functional description for humans/LLMs
+tcg:partSummary a rdf:Property ;
+  rdfs:label "partSummary"@en ;
+  rdfs:comment "Short human/LLM-friendly summary of what normally happens in this phase/step."@en ;
+  rdfs:domain tcg:TurnPart ;
+  rdfs:range xsd:string .
+
+############################
+# MULLIGAN (CORE)
+############################
+
+tcg:MulliganRule a rdfs:Class ;
+  rdfs:label "MulliganRule"@en ;
+  rdfs:comment "Defines how players may redraw their starting hand before the first turn."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+# Attach to Game or Format
+tcg:hasMulliganRule a rdf:Property ;
+  rdfs:label "hasMulliganRule"@en ;
+  rdfs:comment "Associates a mulligan rule with a game or format."@en ;
+  rdfs:domain schema:Thing ;     # tcg:CardGame or tcg:Format
+  rdfs:range tcg:MulliganRule .
+
+############################
+# MULLIGAN STRUCTURAL PROPERTIES
+############################
+
+tcg:mulliganType a rdf:Property ;
+  rdfs:label "mulliganType"@en ;
+  rdfs:comment "Type of mulligan system (london, paris, partial, none, custom, etc.)."@en ;
+  rdfs:domain tcg:MulliganRule ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:allowsMultipleMulligans a rdf:Property ;
+  rdfs:label "allowsMultipleMulligans"@en ;
+  rdfs:comment "Whether players may mulligan multiple times."@en ;
+  rdfs:domain tcg:MulliganRule ;
+  rdfs:range xsd:boolean .
+
+tcg:startingHandAfterMulligan a rdf:Property ;
+  rdfs:label "startingHandAfterMulligan"@en ;
+  rdfs:comment "How hand size is determined after mulligans (fixed, decreasing, drawThenBottom, etc.)."@en ;
+  rdfs:domain tcg:MulliganRule ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:mulliganPenaltyModel a rdf:Property ;
+  rdfs:label "mulliganPenaltyModel"@en ;
+  rdfs:comment "How the mulligan penalty is applied (reduceHandSize, bottomCards, revealCondition, etc.)."@en ;
+  rdfs:domain tcg:MulliganRule ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:mulliganSummary a rdf:Property ;
+  rdfs:label "mulliganSummary"@en ;
+  rdfs:comment "Human-readable description of the mulligan procedure."@en ;
+  rdfs:domain tcg:MulliganRule ;
+  rdfs:range xsd:string .
+
+############################
+# END CONDITIONS (CORE)
+############################
+
+tcg:EndCondition a rdfs:Class ;
+  rdfs:label "EndCondition"@en ;
+  rdfs:comment "A condition that can end the game (win or loss), usually checked continuously or at specific windows."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:WinCondition a rdfs:Class ;
+  rdfs:label "WinCondition"@en ;
+  rdfs:comment "A condition that causes a player to win the game."@en ;
+  rdfs:subClassOf tcg:EndCondition .
+
+tcg:LoseCondition a rdfs:Class ;
+  rdfs:label "LoseCondition"@en ;
+  rdfs:comment "A condition that causes a player to lose the game."@en ;
+  rdfs:subClassOf tcg:EndCondition .
+
+tcg:hasEndCondition a rdf:Property ;
+  rdfs:label "hasEndCondition"@en ;
+  rdfs:comment "Associates end conditions with a game or format."@en ;
+  rdfs:domain schema:Thing ;     # tcg:CardGame or tcg:Format
+  rdfs:range tcg:EndCondition .
+
+tcg:conditionKind a rdf:Property ;
+  rdfs:label "conditionKind"@en ;
+  rdfs:comment "Normalized kind (lifeZero, deckEmpty, poisonThreshold, loreThreshold, objectivePoints, concession, timeout, etc.)."@en ;
+  rdfs:domain tcg:EndCondition ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:thresholdValue a rdf:Property ;
+  rdfs:label "thresholdValue"@en ;
+  rdfs:comment "Numeric threshold used by the condition (e.g., 0 life, 10 poison, 20 lore)."@en ;
+  rdfs:domain tcg:EndCondition ;
+  rdfs:range xsd:decimal .
+
+tcg:appliesToRole a rdf:Property ;
+  rdfs:label "appliesToRole"@en ;
+  rdfs:comment "Who is evaluated (currentPlayer, anyPlayer, opponent, team, etc.)."@en ;
+  rdfs:domain tcg:EndCondition ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:checkTiming a rdf:Property ;
+  rdfs:label "checkTiming"@en ;
+  rdfs:comment "When the condition is checked (continuous, stateBased, endOfTurn, endOfRound, specialWindow, etc.)."@en ;
+  rdfs:domain tcg:EndCondition ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:conditionSummary a rdf:Property ;
+  rdfs:label "conditionSummary"@en ;
+  rdfs:comment "Human/LLM-friendly description of the end condition."@en ;
+  rdfs:domain tcg:EndCondition ;
+  rdfs:range xsd:string .
+
+
+########################################
+# LLM-FRIENDLY DESCRIPTORS (OPTIONAL)  #
+########################################
+
+tcg:DescriptorType a rdfs:Class ;
+  rdfs:label "DescriptorType"@en ;
+  rdfs:comment "Descriptor category (role, interaction, playPattern, synergyTag, etc.)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:CardDescriptor a rdfs:Class ;
+  rdfs:label "CardDescriptor"@en ;
+  rdfs:comment "Descriptor assignment for a card with provenance and confidence."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:ExtractionMethod a rdfs:Class ;
+  rdfs:label "ExtractionMethod"@en ;
+  rdfs:comment "How a descriptor was produced (regex, LLM, human, consensus, model-vX...)."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:DescriptorEvidence a rdfs:Class ;
+  rdfs:label "DescriptorEvidence"@en ;
+  rdfs:comment "Evidence supporting a descriptor (snippets, URLs, dataset ids, etc.)."@en ;
+  rdfs:subClassOf schema:CreativeWork .
+
+#############################
+# METAGAME / COUNTERPLAY    #
+#############################
+
+tcg:Archetype a rdfs:Class ;
+  rdfs:label "Archetype"@en ;
+  rdfs:comment "Metagame archetype/strategy cluster (often format-dependent)."@en ;
+  rdfs:subClassOf schema:CreativeWork .
+
+tcg:Matchup a rdfs:Class ;
+  rdfs:label "Matchup"@en ;
+  rdfs:comment "A vs B relationship in a format with advantage and evidence."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:CounterClaim a rdfs:Class ;
+  rdfs:label "CounterClaim"@en ;
+  rdfs:comment "Evidence-bearing claim that something counters something (card/mechanic/archetype) in a format/time window."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:EvidenceBundle a rdfs:Class ;
+  rdfs:label "EvidenceBundle"@en ;
+  rdfs:subClassOf schema:Intangible .
+
+
+
+@prefix tcg:    <https://tcg-schema.org/core#> .
+@prefix schema: <https://schema.org/> .
+@prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:   <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:    <http://www.w3.org/2001/XMLSchema#> .
+
+############################################################
+# GAME STATE MODEL (DYNAMIC LAYER)
+############################################################
+
+tcg:GameState a rdfs:Class ;
+  rdfs:label "GameState"@en ;
+  rdfs:comment "A snapshot of the current game situation, including zones, active player, and phase."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:hasZone a rdf:Property ;
+  rdfs:label "hasZone"@en ;
+  rdfs:domain tcg:GameState ;
+  rdfs:range tcg:Zone .
+
+tcg:activePlayer a rdf:Property ;
+  rdfs:label "activePlayer"@en ;
+  rdfs:domain tcg:GameState ;
+  rdfs:range tcg:Player .
+
+tcg:currentPhase a rdf:Property ;
+  rdfs:label "currentPhase"@en ;
+  rdfs:domain tcg:GameState ;
+  rdfs:range tcg:TurnPhase .
+
+############################################################
+# PLAYER
+############################################################
+
+tcg:Player a rdfs:Class ;
+  rdfs:label "Player"@en ;
+  rdfs:comment "An agent participating in the game."@en ;
+  rdfs:subClassOf schema:Person .
+
+tcg:controls a rdf:Property ;
+  rdfs:label "controls"@en ;
+  rdfs:domain tcg:Player ;
+  rdfs:range schema:Thing .
+
+############################################################
+# ZONES
+############################################################
+
+tcg:Zone a rdfs:Class ;
+  rdfs:label "Zone"@en ;
+  rdfs:comment "A conceptual area of the game where objects can reside (hand, deck, discard, play area, etc.)."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:zoneRole a rdf:Property ;
+  rdfs:label "zoneRole"@en ;
+  rdfs:comment "Defines the functional role of a zone."@en ;
+  rdfs:domain tcg:Zone ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:contains a rdf:Property ;
+  rdfs:label "contains"@en ;
+  rdfs:domain tcg:Zone ;
+  rdfs:range schema:Thing .
+
+############################################################
+# ACTIONS
+############################################################
+
+tcg:GameAction a rdfs:Class ;
+  rdfs:label "GameAction"@en ;
+  rdfs:comment "An action performed by a player within the rules of the game."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:actionType a rdf:Property ;
+  rdfs:label "actionType"@en ;
+  rdfs:comment "The type/category of the action (playCard, activateAbility, attack, etc.)."@en ;
+  rdfs:domain tcg:GameAction ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:performedBy a rdf:Property ;
+  rdfs:label "performedBy"@en ;
+  rdfs:domain tcg:GameAction ;
+  rdfs:range tcg:Player .
+
+tcg:targets a rdf:Property ;
+  rdfs:label "targets"@en ;
+  rdfs:domain tcg:GameAction ;
+  rdfs:range schema:Thing .
+
+tcg:producesEffect a rdf:Property ;
+  rdfs:label "producesEffect"@en ;
+  rdfs:domain tcg:GameAction ;
+  rdfs:range tcg:Effect .
+
+############################################################
+# EFFECTS
+############################################################
+
+tcg:Effect a rdfs:Class ;
+  rdfs:label "Effect"@en ;
+  rdfs:comment "A change applied to the game state as the result of an action or ability."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:effectType a rdf:Property ;
+  rdfs:label "effectType"@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:modifies a rdf:Property ;
+  rdfs:label "modifies"@en ;
+  rdfs:domain tcg:Effect ;
+  rdfs:range schema:Thing .
+
+############################################################
+# TRIGGERS & PRIORITY WINDOWS
+############################################################
+
+tcg:TriggerCondition a rdfs:Class ;
+  rdfs:label "TriggerCondition"@en ;
+  rdfs:comment "A condition under which an ability or effect may trigger."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:triggersAbility a rdf:Property ;
+  rdfs:label "triggersAbility"@en ;
+  rdfs:domain tcg:TriggerCondition ;
+  rdfs:range tcg:Ability .
+
+tcg:PriorityWindow a rdfs:Class ;
+  rdfs:label "PriorityWindow"@en ;
+  rdfs:comment "A timing window during which players may perform actions or trigger abilities."@en ;
+  rdfs:subClassOf schema:DefinedTerm .
+
+tcg:opensWindow a rdf:Property ;
+  rdfs:label "opensWindow"@en ;
+  rdfs:domain tcg:GameAction ;
+  rdfs:range tcg:PriorityWindow .
+
+############################################################
+# RESOLUTION MODEL
+############################################################
+
+tcg:ResolutionModel a rdfs:Class ;
+  rdfs:label "ResolutionModel"@en ;
+  rdfs:comment "Defines the ordered structure by which a complex action or interaction is resolved."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:resolutionStep a rdf:Property ;
+  rdfs:label "resolutionStep"@en ;
+  rdfs:domain tcg:ResolutionModel ;
+  rdfs:range tcg:ResolutionStep .
+
+tcg:ResolutionStep a rdfs:Class ;
+  rdfs:label "ResolutionStep"@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:stepOrder a rdf:Property ;
+  rdfs:label "stepOrder"@en ;
+  rdfs:domain tcg:ResolutionStep ;
+  rdfs:range xsd:integer .
+
+tcg:stepSummary a rdf:Property ;
+  rdfs:label "stepSummary"@en ;
+  rdfs:domain tcg:ResolutionStep ;
+  rdfs:range xsd:string .
+
+############################################################
+# ACTION CONSTRAINTS (LEGALITY LAYER)
+############################################################
+
+tcg:ActionConstraint a rdfs:Class ;
+  rdfs:label "ActionConstraint"@en ;
+  rdfs:comment "A rule that defines when a specific action type is allowed."@en ;
+  rdfs:subClassOf schema:Intangible .
+
+tcg:appliesToActionType a rdf:Property ;
+  rdfs:label "appliesToActionType"@en ;
+  rdfs:domain tcg:ActionConstraint ;
+  rdfs:range schema:DefinedTerm .
+
+tcg:requiresGameState a rdf:Property ;
+  rdfs:label "requiresGameState"@en ;
+  rdfs:domain tcg:ActionConstraint ;
+  rdfs:range tcg:GameState .
