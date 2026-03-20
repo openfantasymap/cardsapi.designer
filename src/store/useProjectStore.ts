@@ -1,26 +1,31 @@
 import { create } from 'zustand';
-import { CardProject, CardElement, CardTemplate } from '@/types/card';
+import { CardProject, CardElement, CardTemplate, CardRow } from '@/types/card';
 
 interface ProjectStore {
   projects: CardProject[];
   activeProjectId: string | null;
   selectedElementId: string | null;
-  
+
   createProject: (name: string, description: string) => string;
   deleteProject: (id: string) => void;
   setActiveProject: (id: string | null) => void;
   setSelectedElement: (id: string | null) => void;
-  
+
   initTemplate: (projectId: string, template: Partial<CardTemplate>) => void;
   addElement: (projectId: string, element: CardElement) => void;
   updateElement: (projectId: string, elementId: string, updates: Partial<CardElement>) => void;
   removeElement: (projectId: string, elementId: string) => void;
   updateTemplateBackground: (projectId: string, bg: string) => void;
+
+  setRows: (projectId: string, rows: CardRow[]) => void;
+  addRow: (projectId: string, row: CardRow) => void;
+  updateRow: (projectId: string, index: number, row: CardRow) => void;
+  removeRow: (projectId: string, index: number) => void;
 }
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
-export const useProjectStore = create<ProjectStore>((set, get) => ({
+export const useProjectStore = create<ProjectStore>((set) => ({
   projects: [],
   activeProjectId: null,
   selectedElementId: null,
@@ -32,6 +37,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       name,
       description,
       createdAt: new Date().toISOString(),
+      rows: [],
       template: {
         id: generateId(),
         name: 'Default',
@@ -57,9 +63,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   initTemplate: (projectId, template) =>
     set((s) => ({
       projects: s.projects.map((p) =>
-        p.id === projectId
-          ? { ...p, template: { ...p.template!, ...template } }
-          : p
+        p.id === projectId ? { ...p, template: { ...p.template!, ...template } } : p
       ),
     })),
 
@@ -110,6 +114,34 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       projects: s.projects.map((p) =>
         p.id === projectId && p.template
           ? { ...p, template: { ...p.template, backgroundImage: bg } }
+          : p
+      ),
+    })),
+
+  setRows: (projectId, rows) =>
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === projectId ? { ...p, rows } : p)),
+    })),
+
+  addRow: (projectId, row) =>
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === projectId ? { ...p, rows: [...p.rows, row] } : p)),
+    })),
+
+  updateRow: (projectId, index, row) =>
+    set((s) => ({
+      projects: s.projects.map((p) =>
+        p.id === projectId
+          ? { ...p, rows: p.rows.map((r, i) => (i === index ? row : r)) }
+          : p
+      ),
+    })),
+
+  removeRow: (projectId, index) =>
+    set((s) => ({
+      projects: s.projects.map((p) =>
+        p.id === projectId
+          ? { ...p, rows: p.rows.filter((_, i) => i !== index) }
           : p
       ),
     })),
