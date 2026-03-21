@@ -131,19 +131,12 @@ export const ElementPanel = () => {
               key={el.id}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-colors ${
                 selectedElementId === el.id ? 'bg-accent text-accent-foreground' : 'hover:bg-muted text-muted-foreground'
-              } ${el.visible === false ? 'opacity-50' : ''}`}
+              }`}
               onClick={() => setSelectedElement(el.id)}
             >
               {iconMap[el.type] ?? <Diamond size={12} />}
               <span className="flex-1 truncate font-display">{el.tag}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5"
-                onClick={(e) => { e.stopPropagation(); updateElement(activeProjectId, el.id, { visible: el.visible === false }); }}
-              >
-                {el.visible === false ? <EyeOff size={10} /> : <Eye size={10} />}
-              </Button>
+              {el.visibleIfField && <Eye size={10} className="text-primary shrink-0" />}
               <Button
                 variant="ghost"
                 size="icon"
