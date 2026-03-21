@@ -40,7 +40,13 @@ export const CardPreviewGrid = () => {
                 transform: `scale(${scale})`,
               }}
             >
-              {template.elements.filter((el) => el.visible !== false).map((el) => {
+              {template.elements.map((el) => {
+                // Data-driven visibility: skip if conditioned on a field that's empty
+                if (el.visibleIfField) {
+                  const fieldVal = row[el.visibleIfField];
+                  if (!fieldVal || fieldVal.trim() === '') return null;
+                }
+
                 const tagMatch = el.tag.match(/^\{\{(.+)\}\}$/);
                 const tagName = tagMatch ? tagMatch[1].trim() : null;
                 const value = tagName ? row[tagName] ?? el.tag : undefined;

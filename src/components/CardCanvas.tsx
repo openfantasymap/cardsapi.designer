@@ -109,7 +109,7 @@ export const CardCanvas = () => {
         onMouseLeave={handleMouseUp}
         onClick={() => setSelectedElement(null)}
       >
-        {template.elements.filter((el) => el.visible !== false).map((el) => (
+        {template.elements.map((el) => (
           <div
             key={el.id}
             className={`absolute cursor-move transition-shadow ${

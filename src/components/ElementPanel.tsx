@@ -131,19 +131,12 @@ export const ElementPanel = () => {
               key={el.id}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-colors ${
                 selectedElementId === el.id ? 'bg-accent text-accent-foreground' : 'hover:bg-muted text-muted-foreground'
-              } ${el.visible === false ? 'opacity-50' : ''}`}
+              }`}
               onClick={() => setSelectedElement(el.id)}
             >
               {iconMap[el.type] ?? <Diamond size={12} />}
               <span className="flex-1 truncate font-display">{el.tag}</span>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5"
-                onClick={(e) => { e.stopPropagation(); updateElement(activeProjectId, el.id, { visible: el.visible === false }); }}
-              >
-                {el.visible === false ? <EyeOff size={10} /> : <Eye size={10} />}
-              </Button>
+              {el.visibleIfField && <Eye size={10} className="text-primary shrink-0" />}
               <Button
                 variant="ghost"
                 size="icon"
@@ -214,6 +207,21 @@ export const ElementPanel = () => {
                 onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, color: e.target.value } })}
                 className="h-8 mt-1 p-1 cursor-pointer"
               />
+            </div>
+
+            <div>
+              <Label className="text-xs text-muted-foreground">Visible If Field (non-empty)</Label>
+              <Input
+                placeholder="e.g. rarity"
+                value={selectedElement.visibleIfField || ''}
+                onChange={(e) => updateElement(activeProjectId, selectedElement.id, { visibleIfField: e.target.value })}
+                className="text-xs h-8 mt-1"
+              />
+              {selectedElement.visibleIfField && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Shown only when <code className="text-primary">{'{{' + selectedElement.visibleIfField + '}}'}</code> is not empty
+                </p>
+              )}
             </div>
 
             {selectedElement.type === 'svg' && (
