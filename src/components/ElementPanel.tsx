@@ -84,7 +84,7 @@ export const ElementPanel = () => {
   };
 
   return (
-    <div className="w-72 min-w-[18rem] shrink-0 bg-card border-l border-border p-4 overflow-y-auto flex flex-col gap-5">
+    <div className="w-72 min-w-[18rem] shrink-0 h-full bg-card border-l border-border p-4 overflow-y-auto flex flex-col gap-5">
       <div>
         <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
           Add Element
