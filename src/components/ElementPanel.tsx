@@ -211,12 +211,20 @@ export const ElementPanel = () => {
 
             <div>
               <Label className="text-xs text-muted-foreground">Visible If Field (non-empty)</Label>
-              <Input
-                placeholder="e.g. rarity"
-                value={selectedElement.visibleIfField || ''}
-                onChange={(e) => updateElement(activeProjectId, selectedElement.id, { visibleIfField: e.target.value })}
-                className="text-xs h-8 mt-1"
-              />
+              <Select
+                value={selectedElement.visibleIfField || '__none__'}
+                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { visibleIfField: v === '__none__' ? '' : v })}
+              >
+                <SelectTrigger className="text-xs h-8 mt-1">
+                  <SelectValue placeholder="Always visible" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__" className="text-xs">Always visible</SelectItem>
+                  {columns.map((col) => (
+                    <SelectItem key={col} value={col} className="text-xs">{col}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {selectedElement.visibleIfField && (
                 <p className="text-xs text-muted-foreground mt-1">
                   Shown only when <code className="text-primary">{'{{' + selectedElement.visibleIfField + '}}'}</code> is not empty
