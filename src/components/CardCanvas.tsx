@@ -117,7 +117,7 @@ export const CardCanvas = () => {
                 ? 'ring-2 ring-primary ring-offset-1 ring-offset-transparent'
                 : 'hover:ring-1 hover:ring-muted-foreground/30'
             }`}
-            style={{ left: el.x, top: el.y, width: el.width, height: el.height }}
+            style={{ left: el.x, top: el.y, width: el.width, height: el.height, transform: el.style.rotation ? `rotate(${el.style.rotation}deg)` : undefined }}
             onMouseDown={(e) => handleMouseDown(e, el)}
           >
             {renderElement(el)}

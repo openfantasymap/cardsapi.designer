@@ -55,7 +55,7 @@ export const CardPreviewGrid = () => {
                   <div
                     key={el.id}
                     className="absolute"
-                    style={{ left: el.x, top: el.y, width: el.width, height: el.height }}
+                    style={{ left: el.x, top: el.y, width: el.width, height: el.height, transform: el.style.rotation ? `rotate(${el.style.rotation}deg)` : undefined }}
                   >
                     {renderElement(el, value)}
                   </div>

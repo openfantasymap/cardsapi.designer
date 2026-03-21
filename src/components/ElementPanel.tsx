@@ -201,6 +201,11 @@ export const ElementPanel = () => {
             )}
 
             <div>
+              <Label className="text-xs text-muted-foreground">Rotation (°)</Label>
+              <Input type="number" value={selectedElement.style.rotation || 0} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, rotation: +e.target.value } })} className="text-xs h-8 mt-1" />
+            </div>
+
+            <div>
               <Label className="text-xs text-muted-foreground">Color</Label>
               <Input
                 type="color"
