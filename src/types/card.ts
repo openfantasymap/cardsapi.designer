@@ -56,6 +56,7 @@ export interface CardElement {
   y: number;
   width: number;
   height: number;
+  visible?: boolean;
   tcgType?: TcgSchemaClass;
   tcgProperty?: TcgSchemaProperty;
   style: {
