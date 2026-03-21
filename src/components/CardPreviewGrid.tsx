@@ -40,7 +40,7 @@ export const CardPreviewGrid = () => {
                 transform: `scale(${scale})`,
               }}
             >
-              {template.elements.map((el) => {
+              {template.elements.filter((el) => el.visible !== false).map((el) => {
                 const tagMatch = el.tag.match(/^\{\{(.+)\}\}$/);
                 const tagName = tagMatch ? tagMatch[1].trim() : null;
                 const value = tagName ? row[tagName] ?? el.tag : undefined;
