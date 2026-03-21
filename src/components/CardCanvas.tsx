@@ -92,7 +92,7 @@ export const CardCanvas = () => {
   if (!template) return null;
 
   return (
-    <div className="flex items-center justify-center flex-1 p-8">
+    <div className="flex items-center justify-center flex-1 min-w-0 min-h-0 p-8 overflow-hidden">
       <div
         ref={canvasRef}
         className="relative border-2 border-border rounded-lg overflow-hidden select-none"

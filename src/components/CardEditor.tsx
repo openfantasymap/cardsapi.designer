@@ -62,7 +62,7 @@ export const CardEditor = () => {
           </TabsList>
         </div>
 
-        <TabsContent value="design" className="flex-1 flex overflow-hidden mt-0">
+        <TabsContent value="design" className="flex-1 flex overflow-hidden mt-0 min-h-0">
           <CardCanvas />
           <ElementPanel />
         </TabsContent>
