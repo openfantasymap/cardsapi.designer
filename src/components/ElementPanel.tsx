@@ -4,8 +4,9 @@ import { CardElement, TCG_SCHEMA_CLASSES, TCG_SCHEMA_PROPERTIES } from '@/types/
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon } from 'lucide-react';
+import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
