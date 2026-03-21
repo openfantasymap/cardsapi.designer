@@ -17,6 +17,7 @@ export const ElementPanel = () => {
   const selectedElement = template?.elements.find((el) => el.id === selectedElementId);
   const [newTag, setNewTag] = useState('');
   const svgRef = useRef<HTMLInputElement>(null);
+  const columns = Array.from(new Set((project?.rows ?? []).flatMap((r) => Object.keys(r))));
 
   if (!template || !activeProjectId) return null;
 
