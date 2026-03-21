@@ -209,6 +209,21 @@ export const ElementPanel = () => {
               />
             </div>
 
+            <div>
+              <Label className="text-xs text-muted-foreground">Visible If Field (non-empty)</Label>
+              <Input
+                placeholder="e.g. rarity"
+                value={selectedElement.visibleIfField || ''}
+                onChange={(e) => updateElement(activeProjectId, selectedElement.id, { visibleIfField: e.target.value })}
+                className="text-xs h-8 mt-1"
+              />
+              {selectedElement.visibleIfField && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  Shown only when <code className="text-primary">{'{{' + selectedElement.visibleIfField + '}}'}</code> is not empty
+                </p>
+              )}
+            </div>
+
             {selectedElement.type === 'svg' && (
               <div>
                 <Label className="text-xs text-muted-foreground">Replace SVG</Label>
