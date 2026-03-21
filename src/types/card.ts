@@ -67,6 +67,7 @@ export interface CardElement {
     strokeWidth?: number;
     svgData?: string;
     imageUrl?: string;
+    rotation?: number;
   };
 }
 
