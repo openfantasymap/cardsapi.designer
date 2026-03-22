@@ -8,27 +8,26 @@ import { Plus, Trash2, Link, Columns } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const SpreadsheetPanel = () => {
-  const { projects, activeProjectId, setRows, addRow, updateRow, removeRow } = useProjectStore();
+  const { projects, activeProjectId, activeSheetId, setRows, addRow, updateRow, removeRow } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
-  const template = project?.template;
-  const rows = project?.rows ?? [];
+  const sheet = project?.sheets.find((s) => s.id === activeSheetId);
+  const template = sheet?.template;
+  const rows = sheet?.rows ?? [];
   const [sheetUrl, setSheetUrl] = useState('');
   const [importing, setImporting] = useState(false);
   const [newColName, setNewColName] = useState('');
 
   if (!template || !activeProjectId) return null;
 
-  // Columns from template tags
-  const tagColumns = template.elements
+  const tagColumns: string[] = template.elements
     .map((el) => {
       const match = el.tag.match(/^\{\{(.+)\}\}$/);
       return match ? match[1].trim() : null;
     })
-    .filter(Boolean) as string[];
+    .filter((c): c is string => c !== null);
 
-  // Extra columns from row data that aren't in tags
-  const dataColumns = Array.from(
-    new Set((rows).flatMap((r) => Object.keys(r)))
+  const dataColumns: string[] = Array.from(
+    new Set(rows.flatMap((r) => Object.keys(r)))
   ).filter((c) => !tagColumns.includes(c));
 
   const columns = [...tagColumns, ...dataColumns];
@@ -88,7 +87,6 @@ export const SpreadsheetPanel = () => {
       toast.error('Column already exists');
       return;
     }
-    // Add the column to all existing rows
     const updated = rows.map((r) => ({ ...r, [name]: '' }));
     setRows(activeProjectId, updated.length > 0 ? updated : [{ [name]: '' }]);
     setNewColName('');
@@ -107,7 +105,6 @@ export const SpreadsheetPanel = () => {
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
-      {/* Toolbar */}
       <div className="p-3 border-b border-border flex gap-2 items-end flex-wrap">
         <div className="flex-1 min-w-[200px]">
           <Label className="text-xs text-muted-foreground mb-1 block">Google Sheets URL (published)</Label>
@@ -139,7 +136,6 @@ export const SpreadsheetPanel = () => {
         </Button>
       </div>
 
-      {/* Editable table */}
       <div className="flex-1 overflow-auto">
         {columns.length === 0 ? (
           <div className="flex items-center justify-center h-full p-8">

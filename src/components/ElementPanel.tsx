@@ -4,20 +4,20 @@ import { CardElement, TCG_SCHEMA_CLASSES, TCG_SCHEMA_PROPERTIES } from '@/types/
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon, Eye, EyeOff } from 'lucide-react';
+import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon, Eye } from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
 export const ElementPanel = () => {
-  const { projects, activeProjectId, selectedElementId, addElement, updateElement, removeElement, setSelectedElement } = useProjectStore();
+  const { projects, activeProjectId, activeSheetId, selectedElementId, addElement, updateElement, removeElement, setSelectedElement } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
-  const template = project?.template;
+  const sheet = project?.sheets.find((s) => s.id === activeSheetId);
+  const template = sheet?.template;
   const selectedElement = template?.elements.find((el) => el.id === selectedElementId);
   const [newTag, setNewTag] = useState('');
   const svgRef = useRef<HTMLInputElement>(null);
-  const columns = Array.from(new Set((project?.rows ?? []).flatMap((r) => Object.keys(r))));
+  const columns: string[] = Array.from(new Set((sheet?.rows ?? []).flatMap((r) => Object.keys(r))));
 
   if (!template || !activeProjectId) return null;
 
@@ -276,11 +276,6 @@ export const ElementPanel = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {selectedElement.tcgType && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  <code className="text-primary">{selectedElement.tcgType}</code>
-                </p>
-              )}
             </div>
 
             {/* TCG Schema Property */}
@@ -304,11 +299,6 @@ export const ElementPanel = () => {
                     ))}
                 </SelectContent>
               </Select>
-              {selectedElement.tcgProperty && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  <code className="text-primary">{selectedElement.tcgProperty}</code>
-                </p>
-              )}
             </div>
           </div>
         </div>

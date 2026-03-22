@@ -87,7 +87,7 @@ export const ProjectDashboard = () => {
                       </p>
                     )}
                     <p className="text-muted-foreground text-xs mt-2 font-display">
-                      {project.template?.elements.length || 0} elements
+                      {project.sheets.length} template{project.sheets.length !== 1 ? 's' : ''}
                     </p>
                   </div>
                   <div className="flex gap-1 ml-2">

@@ -6,14 +6,19 @@ import { SpreadsheetPanel } from '@/components/SpreadsheetPanel';
 import { CardPreviewGrid } from '@/components/CardPreviewGrid';
 import { GitHubPanel } from '@/components/GitHubPanel';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Upload, Github } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Pencil } from 'lucide-react';
 import { useRef } from 'react';
+import { toast } from 'sonner';
 
 export const CardEditor = () => {
-  const { projects, activeProjectId, setActiveProject, updateTemplateBackground } = useProjectStore();
+  const { projects, activeProjectId, activeSheetId, setActiveProject, setActiveSheet, addSheet, removeSheet, renameSheet, updateTemplateBackground } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
+  const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [renamingSheetId, setRenamingSheetId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   if (!project) return null;
 
@@ -25,6 +30,24 @@ export const CardEditor = () => {
       updateTemplateBackground(activeProjectId, reader.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleAddSheet = () => {
+    if (!activeProjectId) return;
+    const name = `Card ${project.sheets.length + 1}`;
+    addSheet(activeProjectId, name);
+  };
+
+  const handleStartRename = (sheetId: string, currentName: string) => {
+    setRenamingSheetId(sheetId);
+    setRenameValue(currentName);
+  };
+
+  const handleFinishRename = () => {
+    if (renamingSheetId && renameValue.trim() && activeProjectId) {
+      renameSheet(activeProjectId, renamingSheetId, renameValue.trim());
+    }
+    setRenamingSheetId(null);
   };
 
   return (
@@ -44,41 +67,79 @@ export const CardEditor = () => {
         </div>
       </header>
 
-      <Tabs defaultValue="design" className="flex-1 flex flex-col overflow-hidden">
-        <div className="border-b border-border px-4">
-          <TabsList className="h-9 bg-transparent p-0 gap-4">
-            <TabsTrigger value="design" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
-              Design
-            </TabsTrigger>
-            <TabsTrigger value="data" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
-              Spreadsheet
-            </TabsTrigger>
-            <TabsTrigger value="preview" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
-              Preview ({project.rows.length})
-            </TabsTrigger>
-            <TabsTrigger value="github" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display gap-1">
-              <Github size={12} /> GitHub
-            </TabsTrigger>
-          </TabsList>
-        </div>
+      {/* Sheet tabs */}
+      <div className="border-b border-border px-4 flex items-center gap-1 h-9 overflow-x-auto">
+        {project.sheets.map((s) => (
+          <div key={s.id} className="flex items-center">
+            {renamingSheetId === s.id ? (
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onBlur={handleFinishRename}
+                onKeyDown={(e) => e.key === 'Enter' && handleFinishRename()}
+                className="text-xs h-6 w-24 px-1"
+                autoFocus
+              />
+            ) : (
+              <Button
+                variant={activeSheetId === s.id ? 'default' : 'ghost'}
+                size="sm"
+                className="text-xs h-7 px-3 gap-1"
+                onClick={() => setActiveSheet(s.id)}
+                onDoubleClick={() => handleStartRename(s.id, s.name)}
+              >
+                {s.name}
+                {project.sheets.length > 1 && activeSheetId === s.id && (
+                  <X
+                    size={10}
+                    className="ml-1 hover:text-destructive"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      removeSheet(activeProjectId!, s.id);
+                    }}
+                  />
+                )}
+              </Button>
+            )}
+          </div>
+        ))}
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleAddSheet}>
+          <Plus size={12} />
+        </Button>
+      </div>
 
-        <TabsContent value="design" className="flex-1 flex overflow-hidden mt-0 min-h-0">
-          <CardCanvas />
-          <ElementPanel />
-        </TabsContent>
+      {sheet && (
+        <Tabs defaultValue="design" className="flex-1 flex flex-col overflow-hidden">
+          <div className="border-b border-border px-4">
+            <TabsList className="h-9 bg-transparent p-0 gap-4">
+              <TabsTrigger value="design" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
+                Design
+              </TabsTrigger>
+              <TabsTrigger value="data" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
+                Spreadsheet
+              </TabsTrigger>
+              <TabsTrigger value="preview" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
+                Preview ({sheet.rows.length})
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
-        <TabsContent value="data" className="flex-1 flex overflow-hidden mt-0">
-          <SpreadsheetPanel />
-        </TabsContent>
+          <TabsContent value="design" className="flex-1 flex overflow-hidden mt-0 min-h-0">
+            <CardCanvas />
+            <ElementPanel />
+          </TabsContent>
 
-        <TabsContent value="preview" className="flex-1 flex overflow-hidden mt-0">
-          <CardPreviewGrid />
-        </TabsContent>
+          <TabsContent value="data" className="flex-1 flex overflow-hidden mt-0">
+            <SpreadsheetPanel />
+          </TabsContent>
 
-        <TabsContent value="github" className="flex-1 flex overflow-hidden mt-0">
-          <GitHubPanel />
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="preview" className="flex-1 flex overflow-hidden mt-0">
+            <CardPreviewGrid />
+          </TabsContent>
+        </Tabs>
+      )}
+
+      {/* GitHub at project level — accessible from header or a dedicated tab outside sheets */}
     </div>
   );
 };
