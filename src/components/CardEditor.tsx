@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { CardCanvas } from '@/components/CardCanvas';
 import { ElementPanel } from '@/components/ElementPanel';
