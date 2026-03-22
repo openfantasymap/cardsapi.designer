@@ -64,6 +64,19 @@ export const CardEditor = () => {
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => fileRef.current?.click()}>
             <Upload size={12} /> Template BG
           </Button>
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1 text-xs">
+                <Github size={12} /> GitHub
+              </Button>
+            </SheetTrigger>
+            <SheetContent>
+              <SheetHeader>
+                <SheetTitle>GitHub</SheetTitle>
+              </SheetHeader>
+              <GitHubPanel />
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 
