@@ -152,7 +152,7 @@ export const CardEditor = () => {
         </Tabs>
       )}
 
-      {/* GitHub at project level — accessible from header or a dedicated tab outside sheets */}
+      
     </div>
   );
 };
