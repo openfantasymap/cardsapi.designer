@@ -83,11 +83,18 @@ export interface CardTemplate {
 
 export type CardRow = Record<string, string>;
 
+/** A sheet pairs a template with its data rows */
+export interface CardSheet {
+  id: string;
+  name: string;
+  template: CardTemplate;
+  rows: CardRow[];
+}
+
 export interface CardProject {
   id: string;
   name: string;
   description: string;
   createdAt: string;
-  template: CardTemplate | null;
-  rows: CardRow[];
+  sheets: CardSheet[];
 }

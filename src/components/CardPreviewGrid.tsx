@@ -2,10 +2,11 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { renderElement } from '@/components/CardCanvas';
 
 export const CardPreviewGrid = () => {
-  const { projects, activeProjectId } = useProjectStore();
+  const { projects, activeProjectId, activeSheetId } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
-  const template = project?.template;
-  const rows = project?.rows ?? [];
+  const sheet = project?.sheets.find((s) => s.id === activeSheetId);
+  const template = sheet?.template;
+  const rows = sheet?.rows ?? [];
 
   if (!template) return null;
 
@@ -41,7 +42,6 @@ export const CardPreviewGrid = () => {
               }}
             >
               {template.elements.map((el) => {
-                // Data-driven visibility: skip if conditioned on a field that's empty
                 if (el.visibleIfField) {
                   const fieldVal = row[el.visibleIfField];
                   if (!fieldVal || fieldVal.trim() === '') return null;

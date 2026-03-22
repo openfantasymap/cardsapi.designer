@@ -17,7 +17,6 @@ export const GitHubPanel = () => {
   const [patInput, setPatInput] = useState('');
   const [saving, setSaving] = useState(false);
 
-  // Authenticate on mount if token exists
   useEffect(() => {
     if (token && !user) {
       setLoading(true);
@@ -115,7 +114,6 @@ export const GitHubPanel = () => {
 
   return (
     <div className="flex-1 flex flex-col p-4 gap-4">
-      {/* User info */}
       <div className="flex items-center gap-3">
         <img src={user.avatar_url} alt={user.login} className="w-8 h-8 rounded-full border border-border" />
         <div className="flex-1 min-w-0">
@@ -127,7 +125,6 @@ export const GitHubPanel = () => {
         </Button>
       </div>
 
-      {/* Repo selector */}
       <div>
         <Label className="text-xs text-muted-foreground">Repository</Label>
         <Select value={selectedRepo || ''} onValueChange={setSelectedRepo}>
@@ -144,17 +141,15 @@ export const GitHubPanel = () => {
         </Select>
       </div>
 
-      {/* Save */}
       {selectedRepo && project && (
         <div className="border-t border-border pt-4 space-y-3">
           <p className="text-xs text-muted-foreground">
             Will save to <code className="text-primary">cardforge/{project.name.replace(/[^a-zA-Z0-9-_]/g, '_')}/</code>
           </p>
           <ul className="text-xs text-muted-foreground space-y-1">
-            <li>• <code>template.json</code> — card template</li>
-            <li>• <code>data.csv</code> — spreadsheet data</li>
-            <li>• <code>cards/*.html</code> — rendered cards</li>
-            <li>• <code>cards/*.jsonld</code> — TCG Schema linked data</li>
+            {project.sheets.map((s) => (
+              <li key={s.id}>• <code>{s.name}/</code> — template + data + cards</li>
+            ))}
           </ul>
           <Button onClick={handleSave} disabled={saving} className="w-full gap-2 text-xs">
             {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}

@@ -59,9 +59,10 @@ const renderElement = (el: CardElement, value?: string) => {
 export { renderElement };
 
 export const CardCanvas = () => {
-  const { projects, activeProjectId, selectedElementId, setSelectedElement, updateElement } = useProjectStore();
+  const { projects, activeProjectId, activeSheetId, selectedElementId, setSelectedElement, updateElement } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
-  const template = project?.template;
+  const sheet = project?.sheets.find((s) => s.id === activeSheetId);
+  const template = sheet?.template;
   const canvasRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
 
