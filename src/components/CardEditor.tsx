@@ -8,8 +8,8 @@ import { GitHubPanel } from '@/components/GitHubPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { ArrowLeft, Upload, Github, Plus, X, Pencil } from 'lucide-react';
-import { useRef } from 'react';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import { ArrowLeft, Upload, Github, Plus, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const CardEditor = () => {
