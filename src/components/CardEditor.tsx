@@ -67,6 +67,32 @@ export const CardEditor = () => {
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => fileRef.current?.click()}>
             <Upload size={12} /> Template BG
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1 text-xs">
+                <Download size={12} /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { exportProjectJson(project); toast.success('JSON exported'); }}>
+                <FileJson size={14} className="mr-2" /> JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => { await exportProjectZip(project); toast.success('ZIP exported'); }}>
+                <Download size={14} className="mr-2" /> ZIP (JSON + HTML)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  const token = useGitHubStore.getState().token;
+                  await exportProjectPdf(project, token || undefined);
+                  toast.success('PDF exported');
+                } catch (err: any) {
+                  toast.error(err.message || 'PDF export failed');
+                }
+              }}>
+                <FileText size={14} className="mr-2" /> PDF (via backend)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1 text-xs">
