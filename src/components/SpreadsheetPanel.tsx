@@ -138,7 +138,7 @@ export const SpreadsheetPanel = () => {
 
       <div className="flex-1 overflow-auto">
         {columns.length === 0 ? (
-          <div className="flex items-center justify-center h-full p-8">
+          <div className="flex items-start justify-center p-8">
             <p className="text-muted-foreground text-sm text-center">
               Add columns above or create template elements with <code className="text-primary">{'{{tag}}'}</code> names.
             </p>
