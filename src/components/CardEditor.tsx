@@ -9,8 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportProjectJson, exportProjectZip, exportProjectPdf } from '@/services/export';
+import { useGitHubStore } from '@/store/useGitHubStore';
 
 export const CardEditor = () => {
   const { projects, activeProjectId, activeSheetId, setActiveProject, setActiveSheet, addSheet, removeSheet, renameSheet, updateTemplateBackground } = useProjectStore();
