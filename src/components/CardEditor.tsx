@@ -171,11 +171,11 @@ export const CardEditor = () => {
             <ElementPanel />
           </TabsContent>
 
-          <TabsContent value="data" className="flex-1 flex overflow-hidden mt-0">
+          <TabsContent value="data" className="flex-1 flex overflow-hidden mt-0 items-start">
             <SpreadsheetPanel />
           </TabsContent>
 
-          <TabsContent value="preview" className="flex-1 flex overflow-hidden mt-0">
+          <TabsContent value="preview" className="flex-1 flex overflow-hidden mt-0 items-start">
             <CardPreviewGrid />
           </TabsContent>
         </Tabs>
