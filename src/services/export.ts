@@ -60,16 +60,39 @@ const buildCardHtml = (project: CardProject, sheetIndex: number, rowIndex: numbe
 </body></html>`;
 };
 
-/** Export full project as a ZIP with JSON + HTML files */
+/** Convert rows to CSV string */
+const buildCsv = (rows: Record<string, string>[]): string => {
+  if (rows.length === 0) return '';
+  const cols = [...new Set(rows.flatMap((r) => Object.keys(r)))];
+  const escape = (v: string) => `"${(v ?? '').replace(/"/g, '""')}"`;
+  const header = cols.map(escape).join(',');
+  const body = rows.map((r) => cols.map((c) => escape(r[c] ?? '')).join(',')).join('\n');
+  return `${header}\n${body}`;
+};
+
+/** Export full project as a ZIP with JSON, templates, spreadsheets, and HTML files */
 export const exportProjectZip = async (project: CardProject) => {
   const zip = new JSZip();
 
-  // project.json
+  // Full project JSON
   zip.file('project.json', JSON.stringify(project, null, 2));
 
-  // HTML per card per sheet
   project.sheets.forEach((sheet, si) => {
-    const folder = zip.folder(sheet.name.replace(/\s+/g, '_')) || zip;
+    const folderName = sheet.name.replace(/\s+/g, '_');
+    const folder = zip.folder(folderName) || zip;
+
+    // Template JSON (without rows)
+    folder.file('template.json', JSON.stringify(sheet.template, null, 2));
+
+    // Spreadsheet as CSV
+    if (sheet.rows.length > 0) {
+      folder.file('data.csv', buildCsv(sheet.rows));
+    }
+
+    // Spreadsheet as JSON
+    folder.file('data.json', JSON.stringify(sheet.rows, null, 2));
+
+    // HTML per card
     sheet.rows.forEach((_, ri) => {
       const html = buildCardHtml(project, si, ri);
       folder.file(`card_${ri + 1}.html`, html);
