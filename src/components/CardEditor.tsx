@@ -9,8 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText } from 'lucide-react';
 import { toast } from 'sonner';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { exportProjectJson, exportProjectZip, exportProjectPdf } from '@/services/export';
+import { useGitHubStore } from '@/store/useGitHubStore';
 
 export const CardEditor = () => {
   const { projects, activeProjectId, activeSheetId, setActiveProject, setActiveSheet, addSheet, removeSheet, renameSheet, updateTemplateBackground } = useProjectStore();
@@ -64,6 +67,32 @@ export const CardEditor = () => {
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => fileRef.current?.click()}>
             <Upload size={12} /> Template BG
           </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1 text-xs">
+                <Download size={12} /> Export
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => { exportProjectJson(project); toast.success('JSON exported'); }}>
+                <FileJson size={14} className="mr-2" /> JSON
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => { await exportProjectZip(project); toast.success('ZIP exported'); }}>
+                <Download size={14} className="mr-2" /> ZIP (JSON + HTML)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  const token = useGitHubStore.getState().token;
+                  await exportProjectPdf(project, token || undefined);
+                  toast.success('PDF exported');
+                } catch (err: any) {
+                  toast.error(err.message || 'PDF export failed');
+                }
+              }}>
+                <FileText size={14} className="mr-2" /> PDF (via backend)
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1 text-xs">
