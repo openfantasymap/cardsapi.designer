@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
+import { GitHubAuthButton } from '@/components/GitHubAuthButton';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -33,33 +34,36 @@ export const ProjectDashboard = () => {
               Trading card creation workshop
             </p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus size={16} /> New Project
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Project</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-2">
-                <Input
-                  placeholder="Project name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
-                />
-                <Textarea
-                  placeholder="Description (optional)"
-                  value={desc}
-                  onChange={(e) => setDesc(e.target.value)}
-                  rows={2}
-                />
-                <Button onClick={handleCreate} className="w-full">Create</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="flex items-center gap-3">
+            <GitHubAuthButton />
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="gap-2">
+                  <Plus size={16} /> New Project
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create Project</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <Input
+                    placeholder="Project name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
+                  />
+                  <Textarea
+                    placeholder="Description (optional)"
+                    value={desc}
+                    onChange={(e) => setDesc(e.target.value)}
+                    rows={2}
+                  />
+                  <Button onClick={handleCreate} className="w-full">Create</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
         {projects.length === 0 ? (

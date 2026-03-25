@@ -82,7 +82,7 @@ export const CardEditor = () => {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={async () => {
                 try {
-                  const token = useGitHubStore.getState().token;
+                  const token = useGitHubStore.getState().sessionToken;
                   await exportProjectPdf(project, token || undefined);
                   toast.success('PDF exported');
                 } catch (err: any) {
