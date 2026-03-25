@@ -10,10 +10,10 @@ import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as Im
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
 export const ElementPanel = () => {
-  const { projects, activeProjectId, activeSheetId, selectedElementId, addElement, updateElement, removeElement, setSelectedElement } = useProjectStore();
+  const { projects, activeProjectId, activeSheetId, selectedElementId, activeFace, addElement, updateElement, removeElement, setSelectedElement } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
-  const template = sheet?.template;
+  const template = activeFace === 'back' ? sheet?.backTemplate : sheet?.template;
   const selectedElement = template?.elements.find((el) => el.id === selectedElementId);
   const [newTag, setNewTag] = useState('');
   const svgRef = useRef<HTMLInputElement>(null);
