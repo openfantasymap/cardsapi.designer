@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { CardProject, CardElement, CardTemplate, CardRow, CardSheet } from '@/types/card';
+import { CardProject, CardElement, CardTemplate, CardRow, CardSheet, slugify } from '@/types/card';
 
 type TemplateFace = 'front' | 'back';
 
@@ -17,6 +17,7 @@ interface ProjectStore {
   setSelectedElement: (id: string | null) => void;
   setActiveFace: (face: TemplateFace) => void;
   togglePublic: (projectId: string) => void;
+  updateSlug: (projectId: string, slug: string) => boolean;
 
   // Sheet management
   addSheet: (projectId: string, name: string) => string;
@@ -90,11 +91,17 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   createProject: (name, description) => {
     const id = generateId();
     const sheetId = generateId();
+    const base = slugify(name);
+    const taken = new Set(get().projects.map((p) => p.slug));
+    let slug = base;
+    let n = 2;
+    while (taken.has(slug)) slug = `${base}-${n++}`;
     const project: CardProject = {
       id,
       name,
       description,
       createdAt: new Date().toISOString(),
+      slug,
       sheets: [
         {
           id: sheetId,
@@ -139,6 +146,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         p.id === projectId ? { ...p, isPublic: !p.isPublic } : p
       ),
     })),
+
+  updateSlug: (projectId, rawSlug) => {
+    const clean = slugify(rawSlug);
+    if (!clean) return false;
+    if (get().projects.some((p) => p.id !== projectId && p.slug === clean)) return false;
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === projectId ? { ...p, slug: clean } : p)),
+    }));
+    return true;
+  },
 
   // Sheet management
   addSheet: (projectId, name) => {

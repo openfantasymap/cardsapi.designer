@@ -98,10 +98,10 @@ export const ProjectDashboard = () => {
                   <div className="flex gap-1 ml-2">
                     {project.isPublic && (
                       <Link
-                        to={`/p/${project.id}`}
+                        to={`/p/${project.slug}`}
                         onClick={(e) => e.stopPropagation()}
                         className="h-7 w-7 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 hover:text-primary/80"
-                        title="View public page"
+                        title={`View public page (/p/${project.slug})`}
                       >
                         <Globe size={14} />
                       </Link>

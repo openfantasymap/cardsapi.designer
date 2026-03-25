@@ -97,6 +97,10 @@ export interface CardProject {
   name: string;
   description: string;
   createdAt: string;
+  slug: string;
   isPublic?: boolean;
   sheets: CardSheet[];
 }
+
+export const slugify = (name: string): string =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'project';

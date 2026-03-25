@@ -178,8 +178,8 @@ const PublicCard = ({
 };
 
 export const PublicCardSet = () => {
-  const { projectId } = useParams<{ projectId: string }>();
-  const project = useProjectStore((s) => s.projects.find((p) => p.id === projectId));
+  const { slug } = useParams<{ slug: string }>();
+  const project = useProjectStore((s) => s.projects.find((p) => p.slug === slug));
   const [search, setSearch] = useState('');
 
   if (!project) {

@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
+import { slugify } from '@/types/card';
 import { CardCanvas } from '@/components/CardCanvas';
 import { ElementPanel } from '@/components/ElementPanel';
 import { SpreadsheetPanel } from '@/components/SpreadsheetPanel';
@@ -9,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportProjectJson, exportProjectZip, exportProjectPdf } from '@/services/export';
@@ -22,13 +23,36 @@ export const CardEditor = () => {
     projects, activeProjectId, activeSheetId, activeFace,
     setActiveProject, setActiveSheet, setActiveFace,
     addSheet, removeSheet, renameSheet,
-    updateTemplateBackground, enableBackTemplate, removeBackTemplate, togglePublic,
+    updateTemplateBackground, enableBackTemplate, removeBackTemplate, togglePublic, updateSlug,
   } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const fileRef = useRef<HTMLInputElement>(null);
   const [renamingSheetId, setRenamingSheetId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [editingSlug, setEditingSlug] = useState(false);
+  const [slugValue, setSlugValue] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const handleSlugEdit = () => {
+    setSlugValue(project?.slug ?? '');
+    setEditingSlug(true);
+  };
+
+  const handleSlugSave = () => {
+    if (activeProjectId && slugValue.trim()) {
+      const ok = updateSlug(activeProjectId, slugValue.trim());
+      if (!ok) toast.error('Slug already taken or invalid');
+    }
+    setEditingSlug(false);
+  };
+
+  const handleCopyUrl = () => {
+    if (!project?.slug) return;
+    navigator.clipboard.writeText(`${window.location.origin}/p/${project.slug}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   if (!project) return null;
 
@@ -78,11 +102,31 @@ export const CardEditor = () => {
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActiveProject(null)}>
           <ArrowLeft size={16} />
         </Button>
-        <h2 className="font-display text-sm font-semibold text-foreground truncate">
-          {project.name}
-        </h2>
+        <div className="flex flex-col justify-center min-w-0">
+          <h2 className="font-display text-sm font-semibold text-foreground truncate leading-tight">
+            {project.name}
+          </h2>
+          {editingSlug ? (
+            <input
+              className="text-xs font-mono text-muted-foreground bg-transparent border-b border-border outline-none w-36 leading-tight"
+              value={slugValue}
+              onChange={(e) => setSlugValue(e.target.value)}
+              onBlur={handleSlugSave}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleSlugSave(); if (e.key === 'Escape') setEditingSlug(false); }}
+              autoFocus
+            />
+          ) : (
+            <button
+              onClick={handleSlugEdit}
+              className="text-xs font-mono text-muted-foreground hover:text-foreground text-left leading-tight truncate"
+              title="Click to edit slug"
+            >
+              /p/{project.slug}
+            </button>
+          )}
+        </div>
         <div className="ml-auto flex gap-2 items-center">
-          {/* Public toggle */}
+          {/* Public toggle + copy URL */}
           <div className="flex items-center gap-1.5">
             <Globe size={12} className={project.isPublic ? 'text-primary' : 'text-muted-foreground'} />
             <Label className="text-xs text-muted-foreground cursor-pointer" htmlFor="public-toggle">Public</Label>
@@ -92,6 +136,11 @@ export const CardEditor = () => {
               onCheckedChange={() => activeProjectId && togglePublic(activeProjectId)}
               className="scale-75"
             />
+            {project.isPublic && (
+              <button onClick={handleCopyUrl} className="text-muted-foreground hover:text-foreground" title="Copy public URL">
+                {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+              </button>
+            )}
           </div>
 
           <div className="border-l border-border h-6" />
