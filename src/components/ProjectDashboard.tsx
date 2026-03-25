@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Layers, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Layers, Trash2, ArrowRight, Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const ProjectDashboard = () => {
   const { projects, createProject, deleteProject, setActiveProject } = useProjectStore();
