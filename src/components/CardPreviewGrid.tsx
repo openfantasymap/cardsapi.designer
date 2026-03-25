@@ -1,12 +1,50 @@
+import { useState } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { renderElement } from '@/components/CardCanvas';
+import { CardTemplate, CardRow } from '@/types/card';
+
+const RenderCard = ({ template, row, scale }: { template: CardTemplate; row: CardRow; scale: number }) => (
+  <div
+    className="relative origin-top-left"
+    style={{
+      width: template.width,
+      height: template.height,
+      backgroundColor: template.backgroundColor,
+      backgroundImage: template.backgroundImage ? `url(${template.backgroundImage})` : undefined,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      transform: `scale(${scale})`,
+    }}
+  >
+    {template.elements.map((el) => {
+      if (el.visibleIfField) {
+        const fieldVal = row[el.visibleIfField];
+        if (!fieldVal || fieldVal.trim() === '') return null;
+      }
+      const tagMatch = el.tag.match(/^\{\{(.+)\}\}$/);
+      const tagName = tagMatch ? tagMatch[1].trim() : null;
+      const value = tagName ? row[tagName] ?? el.tag : undefined;
+      return (
+        <div
+          key={el.id}
+          className="absolute"
+          style={{ left: el.x, top: el.y, width: el.width, height: el.height, transform: el.style.rotation ? `rotate(${el.style.rotation}deg)` : undefined }}
+        >
+          {renderElement(el, value)}
+        </div>
+      );
+    })}
+  </div>
+);
 
 export const CardPreviewGrid = () => {
   const { projects, activeProjectId, activeSheetId } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const template = sheet?.template;
+  const backTemplate = sheet?.backTemplate;
   const rows = sheet?.rows ?? [];
+  const [showBack, setShowBack] = useState(false);
 
   if (!template) return null;
 
@@ -19,49 +57,34 @@ export const CardPreviewGrid = () => {
   }
 
   const scale = 0.45;
+  const activeTemplate = showBack && backTemplate ? backTemplate : template;
 
   return (
     <div className="flex-1 overflow-auto p-6">
+      {backTemplate && (
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setShowBack(false)}
+            className={`text-xs font-display px-3 py-1 rounded transition-colors ${!showBack ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+          >
+            Front
+          </button>
+          <button
+            onClick={() => setShowBack(true)}
+            className={`text-xs font-display px-3 py-1 rounded transition-colors ${showBack ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+          >
+            Back
+          </button>
+        </div>
+      )}
       <div className="flex flex-wrap gap-4">
         {rows.map((row, i) => (
           <div
             key={i}
             className="rounded-lg overflow-hidden border border-border"
-            style={{ width: template.width * scale, height: template.height * scale }}
+            style={{ width: activeTemplate.width * scale, height: activeTemplate.height * scale }}
           >
-            <div
-              className="relative origin-top-left"
-              style={{
-                width: template.width,
-                height: template.height,
-                backgroundColor: template.backgroundColor,
-                backgroundImage: template.backgroundImage ? `url(${template.backgroundImage})` : undefined,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
-                transform: `scale(${scale})`,
-              }}
-            >
-              {template.elements.map((el) => {
-                if (el.visibleIfField) {
-                  const fieldVal = row[el.visibleIfField];
-                  if (!fieldVal || fieldVal.trim() === '') return null;
-                }
-
-                const tagMatch = el.tag.match(/^\{\{(.+)\}\}$/);
-                const tagName = tagMatch ? tagMatch[1].trim() : null;
-                const value = tagName ? row[tagName] ?? el.tag : undefined;
-
-                return (
-                  <div
-                    key={el.id}
-                    className="absolute"
-                    style={{ left: el.x, top: el.y, width: el.width, height: el.height, transform: el.style.rotation ? `rotate(${el.style.rotation}deg)` : undefined }}
-                  >
-                    {renderElement(el, value)}
-                  </div>
-                );
-              })}
-            </div>
+            <RenderCard template={activeTemplate} row={row} scale={scale} />
           </div>
         ))}
       </div>

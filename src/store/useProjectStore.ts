@@ -1,24 +1,33 @@
 import { create } from 'zustand';
 import { CardProject, CardElement, CardTemplate, CardRow, CardSheet } from '@/types/card';
 
+type TemplateFace = 'front' | 'back';
+
 interface ProjectStore {
   projects: CardProject[];
   activeProjectId: string | null;
   activeSheetId: string | null;
   selectedElementId: string | null;
+  activeFace: TemplateFace;
 
   createProject: (name: string, description: string) => string;
   deleteProject: (id: string) => void;
   setActiveProject: (id: string | null) => void;
   setActiveSheet: (id: string | null) => void;
   setSelectedElement: (id: string | null) => void;
+  setActiveFace: (face: TemplateFace) => void;
+  togglePublic: (projectId: string) => void;
 
   // Sheet management
   addSheet: (projectId: string, name: string) => string;
   removeSheet: (projectId: string, sheetId: string) => void;
   renameSheet: (projectId: string, sheetId: string, name: string) => void;
 
-  // Template operations (scoped to active sheet)
+  // Back template
+  enableBackTemplate: (projectId: string) => void;
+  removeBackTemplate: (projectId: string) => void;
+
+  // Template operations (scoped to active sheet + active face)
   addElement: (projectId: string, element: CardElement) => void;
   updateElement: (projectId: string, elementId: string, updates: Partial<CardElement>) => void;
   removeElement: (projectId: string, elementId: string) => void;
@@ -55,11 +64,28 @@ const mapActiveSheet = (
       : p
   );
 
+/** Get the template for the active face */
+const getActiveTemplate = (sheet: CardSheet, face: TemplateFace): CardTemplate | undefined =>
+  face === 'back' ? sheet.backTemplate : sheet.template;
+
+/** Map the active-face template */
+const mapFaceTemplate = (
+  sheet: CardSheet,
+  face: TemplateFace,
+  fn: (t: CardTemplate) => CardTemplate
+): CardSheet => {
+  if (face === 'back' && sheet.backTemplate) {
+    return { ...sheet, backTemplate: fn(sheet.backTemplate) };
+  }
+  return { ...sheet, template: fn(sheet.template) };
+};
+
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   projects: [],
   activeProjectId: null,
   activeSheetId: null,
   selectedElementId: null,
+  activeFace: 'front',
 
   createProject: (name, description) => {
     const id = generateId();
@@ -91,7 +117,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   setActiveProject: (id) => {
     if (!id) {
-      set({ activeProjectId: null, activeSheetId: null, selectedElementId: null });
+      set({ activeProjectId: null, activeSheetId: null, selectedElementId: null, activeFace: 'front' });
       return;
     }
     const project = get().projects.find((p) => p.id === id);
@@ -99,11 +125,20 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       activeProjectId: id,
       activeSheetId: project?.sheets[0]?.id ?? null,
       selectedElementId: null,
+      activeFace: 'front',
     });
   },
 
-  setActiveSheet: (id) => set({ activeSheetId: id, selectedElementId: null }),
+  setActiveSheet: (id) => set({ activeSheetId: id, selectedElementId: null, activeFace: 'front' }),
   setSelectedElement: (id) => set({ selectedElementId: id }),
+  setActiveFace: (face) => set({ activeFace: face, selectedElementId: null }),
+
+  togglePublic: (projectId) =>
+    set((s) => ({
+      projects: s.projects.map((p) =>
+        p.id === projectId ? { ...p, isPublic: !p.isPublic } : p
+      ),
+    })),
 
   // Sheet management
   addSheet: (projectId, name) => {
@@ -120,6 +155,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       ),
       activeSheetId: sheetId,
       selectedElementId: null,
+      activeFace: 'front',
     }));
     return sheetId;
   },
@@ -127,7 +163,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   removeSheet: (projectId, sheetId) =>
     set((s) => {
       const project = s.projects.find((p) => p.id === projectId);
-      if (!project || project.sheets.length <= 1) return s; // keep at least one
+      if (!project || project.sheets.length <= 1) return s;
       const remaining = project.sheets.filter((sh) => sh.id !== sheetId);
       return {
         projects: s.projects.map((p) =>
@@ -143,46 +179,71 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       projects: mapActiveSheet(s.projects, projectId, sheetId, (sh) => ({ ...sh, name })),
     })),
 
-  // Element ops — scoped to activeSheet
-  addElement: (projectId, element) =>
+  // Back template
+  enableBackTemplate: (projectId) =>
     set((s) => ({
       projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) => ({
         ...sh,
-        template: { ...sh.template, elements: [...sh.template.elements, element] },
+        backTemplate: sh.backTemplate ?? {
+          ...makeDefaultTemplate(),
+          width: sh.template.width,
+          height: sh.template.height,
+        },
       })),
+    })),
+
+  removeBackTemplate: (projectId) =>
+    set((s) => ({
+      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) => ({
+        ...sh,
+        backTemplate: undefined,
+      })),
+      activeFace: 'front',
+      selectedElementId: null,
+    })),
+
+  // Element ops — scoped to activeSheet + activeFace
+  addElement: (projectId, element) =>
+    set((s) => ({
+      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
+        mapFaceTemplate(sh, s.activeFace, (t) => ({
+          ...t,
+          elements: [...t.elements, element],
+        }))
+      ),
     })),
 
   updateElement: (projectId, elementId, updates) =>
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) => ({
-        ...sh,
-        template: {
-          ...sh.template,
-          elements: sh.template.elements.map((el) =>
+      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
+        mapFaceTemplate(sh, s.activeFace, (t) => ({
+          ...t,
+          elements: t.elements.map((el) =>
             el.id === elementId ? { ...el, ...updates } : el
           ),
-        },
-      })),
+        }))
+      ),
     })),
 
   removeElement: (projectId, elementId) =>
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) => ({
-        ...sh,
-        template: {
-          ...sh.template,
-          elements: sh.template.elements.filter((el) => el.id !== elementId),
-        },
-      })),
+      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
+        mapFaceTemplate(sh, s.activeFace, (t) => ({
+          ...t,
+          elements: t.elements.filter((el) => el.id !== elementId),
+        }))
+      ),
       selectedElementId: s.selectedElementId === elementId ? null : s.selectedElementId,
     })),
 
   updateTemplateBackground: (projectId, bg) =>
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) => ({
-        ...sh,
-        template: { ...sh.template, backgroundImage: bg },
-      })),
+      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
+        mapFaceTemplate(sh, s.activeFace, (t) => ({
+          ...t,
+          backgroundImage: bg,
+        }))
+      ),
     })),
 
   // Row ops — scoped to activeSheet
