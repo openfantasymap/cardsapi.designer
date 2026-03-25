@@ -376,6 +376,8 @@ components:
         imageUrl:
           type: string
           format: uri
+        rotation:
+          type: number
 
     CardElement:
       type: object
@@ -399,10 +401,15 @@ components:
           type: number
         style:
           $ref: '#/components/schemas/CardElementStyle'
+        visibleIfField:
+          type: string
+          description: "Show element only when this field has a non-empty value"
         tcgType:
           type: string
+          description: "TCG Schema class URI (e.g. tcg:Card)"
         tcgProperty:
           type: string
+          description: "TCG Schema property URI (e.g. schema:name)"
 
     CardTemplate:
       type: object
@@ -432,10 +439,32 @@ components:
       type: object
       additionalProperties:
         type: string
+      description: >
+        Key-value pairs. Keys matching {{tag}} names populate the template;
+        extra keys (e.g. "description") appear as metadata on the public page.
+
+    CardSheet:
+      type: object
+      required: [id, name, template, rows]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        template:
+          $ref: '#/components/schemas/CardTemplate'
+          description: Front-face template
+        backTemplate:
+          $ref: '#/components/schemas/CardTemplate'
+          description: Optional back-face template
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardRow'
 
     CardProject:
       type: object
-      required: [id, name, description, createdAt, rows]
+      required: [id, name, description, createdAt, sheets]
       properties:
         id:
           type: string
@@ -446,12 +475,15 @@ components:
         createdAt:
           type: string
           format: date-time
-        template:
-          $ref: '#/components/schemas/CardTemplate'
-        rows:
+        isPublic:
+          type: boolean
+          description: >
+            When true, the project is viewable at /p/{projectId} as a
+            searchable public card gallery with TCG Schema microdata.
+        sheets:
           type: array
           items:
-            $ref: '#/components/schemas/CardRow'
+            $ref: '#/components/schemas/CardSheet'
 
     SaveProjectRequest:
       type: object
