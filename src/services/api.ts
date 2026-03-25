@@ -2,8 +2,8 @@
  * CardForge API client
  *
  * All persistence (save/load projects, list repos) goes through the backend.
- * The frontend only handles GitHub authentication (PAT → user identity).
- * The backend uses the forwarded token to interact with GitHub on behalf of the user.
+ * Authentication is handled via server-side GitHub App OAuth.
+ * The session token is forwarded to authenticate API requests.
  */
 
 import { CardProject } from '@/types/card';
@@ -11,8 +11,8 @@ import { CardProject } from '@/types/card';
 /** Base URL — configure via env or default to relative path */
 const API_BASE = import.meta.env.VITE_CARDFORGE_API_URL || '/api';
 
-const apiHeaders = (githubToken: string) => ({
-  Authorization: `Bearer ${githubToken}`,
+const apiHeaders = (sessionToken: string) => ({
+  Authorization: `Bearer ${sessionToken}`,
   'Content-Type': 'application/json',
 });
 
@@ -26,9 +26,9 @@ export interface RepoSummary {
   default_branch: string;
 }
 
-/** List repos the authenticated user can push to (proxied via backend) */
-export const listRepos = async (token: string): Promise<RepoSummary[]> => {
-  const res = await fetch(`${API_BASE}/repos`, { headers: apiHeaders(token) });
+/** List repos the authenticated user can push to */
+export const listRepos = async (sessionToken: string): Promise<RepoSummary[]> => {
+  const res = await fetch(`${API_BASE}/repos`, { headers: apiHeaders(sessionToken) });
   if (!res.ok) throw new Error('Failed to list repos');
   return res.json();
 };
@@ -42,14 +42,14 @@ export interface SaveProjectResponse {
 
 /** Save a full project (template + data + cards) to a repo via the backend */
 export const saveProject = async (
-  token: string,
+  sessionToken: string,
   repo: string,
   project: CardProject,
   branch?: string
 ): Promise<SaveProjectResponse> => {
   const res = await fetch(`${API_BASE}/projects/${project.id}/save`, {
     method: 'POST',
-    headers: apiHeaders(token),
+    headers: apiHeaders(sessionToken),
     body: JSON.stringify({ repo, branch, project }),
   });
   if (!res.ok) {
@@ -61,13 +61,13 @@ export const saveProject = async (
 
 /** Load a project from a repo via the backend */
 export const loadProject = async (
-  token: string,
+  sessionToken: string,
   repo: string,
   projectId: string
 ): Promise<CardProject> => {
   const res = await fetch(
     `${API_BASE}/projects/${projectId}/load?repo=${encodeURIComponent(repo)}`,
-    { headers: apiHeaders(token) }
+    { headers: apiHeaders(sessionToken) }
   );
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
