@@ -9,14 +9,21 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportProjectJson, exportProjectZip, exportProjectPdf } from '@/services/export';
 import { useGitHubStore } from '@/store/useGitHubStore';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 export const CardEditor = () => {
-  const { projects, activeProjectId, activeSheetId, setActiveProject, setActiveSheet, addSheet, removeSheet, renameSheet, updateTemplateBackground } = useProjectStore();
+  const {
+    projects, activeProjectId, activeSheetId, activeFace,
+    setActiveProject, setActiveSheet, setActiveFace,
+    addSheet, removeSheet, renameSheet,
+    updateTemplateBackground, enableBackTemplate, removeBackTemplate, togglePublic,
+  } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -53,6 +60,18 @@ export const CardEditor = () => {
     setRenamingSheetId(null);
   };
 
+  const handleToggleBack = () => {
+    if (!activeProjectId) return;
+    if (sheet?.backTemplate) {
+      removeBackTemplate(activeProjectId);
+      toast.success('Back template removed');
+    } else {
+      enableBackTemplate(activeProjectId);
+      setActiveFace('back');
+      toast.success('Back template enabled');
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="h-12 border-b border-border flex items-center px-4 gap-3">
@@ -62,11 +81,36 @@ export const CardEditor = () => {
         <h2 className="font-display text-sm font-semibold text-foreground truncate">
           {project.name}
         </h2>
-        <div className="ml-auto flex gap-2">
+        <div className="ml-auto flex gap-2 items-center">
+          {/* Public toggle */}
+          <div className="flex items-center gap-1.5">
+            <Globe size={12} className={project.isPublic ? 'text-primary' : 'text-muted-foreground'} />
+            <Label className="text-xs text-muted-foreground cursor-pointer" htmlFor="public-toggle">Public</Label>
+            <Switch
+              id="public-toggle"
+              checked={!!project.isPublic}
+              onCheckedChange={() => activeProjectId && togglePublic(activeProjectId)}
+              className="scale-75"
+            />
+          </div>
+
+          <div className="border-l border-border h-6" />
+
           <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handleBgUpload} />
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => fileRef.current?.click()}>
             <Upload size={12} /> Template BG
           </Button>
+
+          {/* Back template toggle */}
+          <Button
+            variant={sheet?.backTemplate ? 'default' : 'outline'}
+            size="sm"
+            className="gap-1 text-xs"
+            onClick={handleToggleBack}
+          >
+            <RotateCcw size={12} /> {sheet?.backTemplate ? 'Remove Back' : 'Add Back'}
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1 text-xs">
@@ -152,7 +196,7 @@ export const CardEditor = () => {
 
       {sheet && (
         <Tabs defaultValue="design" className="flex-1 flex flex-col overflow-hidden">
-          <div className="border-b border-border px-4">
+          <div className="border-b border-border px-4 flex items-center">
             <TabsList className="h-9 bg-transparent p-0 gap-4">
               <TabsTrigger value="design" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
                 Design
@@ -164,6 +208,24 @@ export const CardEditor = () => {
                 Preview ({sheet.rows.length})
               </TabsTrigger>
             </TabsList>
+
+            {/* Front/Back face toggle — only in Design tab context */}
+            {sheet.backTemplate && (
+              <div className="ml-auto flex gap-1">
+                <button
+                  onClick={() => setActiveFace('front')}
+                  className={`text-xs font-display px-3 py-1 rounded transition-colors ${activeFace === 'front' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                >
+                  Front
+                </button>
+                <button
+                  onClick={() => setActiveFace('back')}
+                  className={`text-xs font-display px-3 py-1 rounded transition-colors ${activeFace === 'back' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'}`}
+                >
+                  Back
+                </button>
+              </div>
+            )}
           </div>
 
           <TabsContent value="design" className="flex-1 flex overflow-hidden mt-0 min-h-0">
@@ -180,8 +242,6 @@ export const CardEditor = () => {
           </TabsContent>
         </Tabs>
       )}
-
-      
     </div>
   );
 };

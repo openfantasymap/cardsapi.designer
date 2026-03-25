@@ -59,10 +59,10 @@ const renderElement = (el: CardElement, value?: string) => {
 export { renderElement };
 
 export const CardCanvas = () => {
-  const { projects, activeProjectId, activeSheetId, selectedElementId, setSelectedElement, updateElement } = useProjectStore();
+  const { projects, activeProjectId, activeSheetId, selectedElementId, activeFace, setSelectedElement, updateElement } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
-  const template = sheet?.template;
+  const template = activeFace === 'back' ? sheet?.backTemplate : sheet?.template;
   const canvasRef = useRef<HTMLDivElement>(null);
   const [dragging, setDragging] = useState<{ id: string; offsetX: number; offsetY: number } | null>(null);
 
@@ -90,7 +90,16 @@ export const CardCanvas = () => {
 
   const handleMouseUp = useCallback(() => setDragging(null), []);
 
-  if (!template) return null;
+  if (!template) {
+    if (activeFace === 'back') {
+      return (
+        <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">
+          No back template. Enable it from the header.
+        </div>
+      );
+    }
+    return null;
+  }
 
   return (
     <div className="flex items-center justify-center flex-1 min-w-0 min-h-0 p-8 overflow-hidden">

@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Layers, Trash2, ArrowRight } from 'lucide-react';
+import { Plus, Layers, Trash2, ArrowRight, Globe } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const ProjectDashboard = () => {
   const { projects, createProject, deleteProject, setActiveProject } = useProjectStore();
@@ -95,6 +96,16 @@ export const ProjectDashboard = () => {
                     </p>
                   </div>
                   <div className="flex gap-1 ml-2">
+                    {project.isPublic && (
+                      <Link
+                        to={`/p/${project.id}`}
+                        onClick={(e) => e.stopPropagation()}
+                        className="h-7 w-7 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 hover:text-primary/80"
+                        title="View public page"
+                      >
+                        <Globe size={14} />
+                      </Link>
+                    )}
                     <Button
                       variant="ghost"
                       size="icon"
