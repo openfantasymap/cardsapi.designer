@@ -1,18 +1,47 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
+import { useGitHubStore } from '@/store/useGitHubStore';
 import { GitHubAuthButton } from '@/components/GitHubAuthButton';
+import { listProjects, loadProject, type IndexEntry } from '@/services/projects';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Layers, Trash2, ArrowRight, Globe } from 'lucide-react';
+import { Plus, Layers, Trash2, ArrowRight, Globe, Github, Loader2, RefreshCw, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 export const ProjectDashboard = () => {
-  const { projects, createProject, deleteProject, setActiveProject } = useProjectStore();
+  const { projects, createProject, deleteProject, setActiveProject, upsertProject } = useProjectStore();
+  const { token, user } = useGitHubStore();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
+
+  const [remote, setRemote] = useState<IndexEntry[]>([]);
+  const [syncing, setSyncing] = useState(false);
+  const [openingSlug, setOpeningSlug] = useState<string | null>(null);
+
+  const localIds = new Set(projects.map((p) => p.id));
+  const remoteOnly = remote.filter((e) => !localIds.has(e.id));
+
+  const syncFromGitHub = async () => {
+    if (!token || !user) return;
+    setSyncing(true);
+    try {
+      setRemote(await listProjects(token, user.login));
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to load projects from GitHub');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Auto-sync the index once we're connected.
+  useEffect(() => {
+    if (token && user) syncFromGitHub();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user?.login]);
 
   const handleCreate = () => {
     if (!name.trim()) return;
@@ -21,6 +50,20 @@ export const ProjectDashboard = () => {
     setDesc('');
     setOpen(false);
     setActiveProject(id);
+  };
+
+  const handleOpenRemote = async (entry: IndexEntry) => {
+    if (!token) return;
+    setOpeningSlug(entry.slug);
+    try {
+      const project = await loadProject(token, entry.repo);
+      upsertProject(project);
+      setActiveProject(project.id);
+    } catch (err) {
+      toast.error((err as Error).message || `Failed to open ${entry.name}`);
+    } finally {
+      setOpeningSlug(null);
+    }
   };
 
   return (
@@ -36,6 +79,11 @@ export const ProjectDashboard = () => {
             </p>
           </div>
           <div className="flex items-center gap-3">
+            {user && (
+              <Button variant="outline" size="sm" className="gap-2 text-xs" onClick={syncFromGitHub} disabled={syncing}>
+                {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Sync
+              </Button>
+            )}
             <GitHubAuthButton />
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
@@ -67,11 +115,13 @@ export const ProjectDashboard = () => {
           </div>
         </div>
 
-        {projects.length === 0 ? (
+        {projects.length === 0 && remoteOnly.length === 0 ? (
           <div className="text-center py-24 animate-fade-in">
             <Layers size={48} className="mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-lg">No projects yet</p>
-            <p className="text-muted-foreground text-sm mt-1">Create your first card project to get started</p>
+            <p className="text-muted-foreground text-sm mt-1">
+              {user ? 'Create your first card project to get started' : 'Create one, or sign in to load projects from GitHub'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
@@ -127,6 +177,31 @@ export const ProjectDashboard = () => {
                   </div>
                 </div>
               </div>
+            ))}
+
+            {/* Projects that exist on GitHub but aren't open locally yet. */}
+            {remoteOnly.map((entry) => (
+              <button
+                key={entry.repo}
+                onClick={() => handleOpenRemote(entry)}
+                disabled={openingSlug === entry.slug}
+                className="group text-left bg-card/50 border border-dashed border-border rounded-lg p-5 hover:border-primary/40 transition-all disabled:opacity-60"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="font-display text-sm font-semibold text-foreground truncate flex items-center gap-1.5">
+                      <Github size={13} className="text-muted-foreground" /> {entry.name}
+                    </h3>
+                    {entry.description && (
+                      <p className="text-muted-foreground text-xs mt-1 line-clamp-2">{entry.description}</p>
+                    )}
+                    <p className="text-muted-foreground text-xs mt-2 font-mono truncate">{entry.repo}</p>
+                  </div>
+                  <div className="ml-2 text-muted-foreground group-hover:text-primary">
+                    {openingSlug === entry.slug ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                  </div>
+                </div>
+              </button>
             ))}
           </div>
         )}

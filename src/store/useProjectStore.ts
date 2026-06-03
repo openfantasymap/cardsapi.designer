@@ -11,6 +11,7 @@ interface ProjectStore {
   activeFace: TemplateFace;
 
   createProject: (name: string, description: string) => string;
+  upsertProject: (project: CardProject) => void;
   deleteProject: (id: string) => void;
   setActiveProject: (id: string | null) => void;
   setActiveSheet: (id: string | null) => void;
@@ -114,6 +115,16 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     set((s) => ({ projects: [...s.projects, project] }));
     return id;
   },
+
+  upsertProject: (project) =>
+    set((s) => {
+      const exists = s.projects.some((p) => p.id === project.id);
+      return {
+        projects: exists
+          ? s.projects.map((p) => (p.id === project.id ? project : p))
+          : [...s.projects, project],
+      };
+    }),
 
   deleteProject: (id) =>
     set((s) => ({

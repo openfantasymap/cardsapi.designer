@@ -13,8 +13,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { exportProjectJson, exportProjectZip, exportProjectPdf } from '@/services/export';
-import { useGitHubStore } from '@/store/useGitHubStore';
+import { exportProjectJson, exportProjectZip, exportProjectPdfLocal, exportProjectPdfRemote } from '@/services/export';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
@@ -173,16 +172,24 @@ export const CardEditor = () => {
               <DropdownMenuItem onClick={async () => { await exportProjectZip(project); toast.success('ZIP exported'); }}>
                 <Download size={14} className="mr-2" /> ZIP (JSON + HTML)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={async () => {
+              <DropdownMenuItem onClick={() => {
                 try {
-                  const token = useGitHubStore.getState().sessionToken;
-                  await exportProjectPdf(project, token || undefined);
-                  toast.success('PDF exported');
+                  exportProjectPdfLocal(project);
                 } catch (err: any) {
-                  toast.error(err.message || 'PDF export failed');
+                  toast.error(err.message || 'Local PDF failed');
                 }
               }}>
-                <FileText size={14} className="mr-2" /> PDF (via backend)
+                <FileText size={14} className="mr-2" /> PDF (local — print/save)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={async () => {
+                try {
+                  await exportProjectPdfRemote(project);
+                  toast.success('PDF exported');
+                } catch (err: any) {
+                  toast.error(err.message || 'Remote PDF failed');
+                }
+              }}>
+                <FileText size={14} className="mr-2" /> PDF (remote — high fidelity)
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

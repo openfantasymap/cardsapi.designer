@@ -1,37 +1,28 @@
 import { useEffect } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useGitHubStore } from '@/store/useGitHubStore';
-import { getMe } from '@/services/github';
-import { listRepos } from '@/services/api';
+import { getUser } from '@/services/githubApi';
 import { ProjectDashboard } from '@/components/ProjectDashboard';
 import { CardEditor } from '@/components/CardEditor';
-import { GitHubCallbackHandler } from '@/components/GitHubCallbackHandler';
 
 const Index = () => {
   const activeProjectId = useProjectStore((s) => s.activeProjectId);
-  const { sessionToken, user, setUser, setRepos, setLoading, logout } = useGitHubStore();
+  const { token, user, setUser, setLoading, logout } = useGitHubStore();
 
-  // Restore session on mount
+  // Restore the GitHub session on mount: validate the stored token by fetching
+  // the user. There is no OAuth redirect to handle anymore.
   useEffect(() => {
-    if (sessionToken && !user) {
+    if (token && !user) {
       setLoading(true);
-      getMe(sessionToken)
-        .then((u) => {
-          setUser(u);
-          return listRepos(sessionToken);
-        })
-        .then((r) => setRepos(r))
+      getUser(token)
+        .then((u) => setUser(u))
         .catch(() => logout())
         .finally(() => setLoading(false));
     }
-  }, [sessionToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
 
-  return (
-    <>
-      <GitHubCallbackHandler />
-      {activeProjectId ? <CardEditor /> : <ProjectDashboard />}
-    </>
-  );
+  return activeProjectId ? <CardEditor /> : <ProjectDashboard />;
 };
 
 export default Index;

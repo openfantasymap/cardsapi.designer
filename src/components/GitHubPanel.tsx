@@ -1,64 +1,56 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { useProjectStore } from '@/store/useProjectStore';
-import { getMe, initiateGitHubAuth, logout as apiLogout } from '@/services/github';
-import { listRepos, saveProject } from '@/services/api';
+import { login } from '@/services/githubAuth';
+import { saveProject, loadProject, repoNameForProject } from '@/services/projects';
 import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Github, LogOut, Save, Loader2 } from 'lucide-react';
+import { Github, LogOut, Save, Loader2, Download, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const GitHubPanel = () => {
-  const { sessionToken, user, repos, selectedRepo, loading, setSession, setUser, setRepos, setSelectedRepo, setLoading, logout } = useGitHubStore();
-  const { projects, activeProjectId } = useProjectStore();
+  const { token, user, loading, logout } = useGitHubStore();
+  const { projects, activeProjectId, upsertProject } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const [saving, setSaving] = useState(false);
+  const [reloading, setReloading] = useState(false);
 
-  useEffect(() => {
-    if (sessionToken && !user) {
-      setLoading(true);
-      getMe(sessionToken)
-        .then((u) => {
-          setUser(u);
-          return listRepos(sessionToken);
-        })
-        .then((r) => setRepos(r))
-        .catch(() => {
-          toast.error('Session expired. Please log in again.');
-          logout();
-        })
-        .finally(() => setLoading(false));
-    }
-  }, [sessionToken]);
+  const repoName = project ? repoNameForProject(project.id) : '';
+  const fullName = user && project ? `${user.login}/${repoName}` : '';
 
   const handleLogin = async () => {
     try {
-      const url = await initiateGitHubAuth(window.location.href);
-      window.location.href = url;
-    } catch {
-      toast.error('Failed to start GitHub login');
+      await login(window.location.pathname + window.location.search);
+    } catch (e) {
+      toast.error((e as Error).message || 'Failed to start GitHub login');
     }
-  };
-
-  const handleLogout = async () => {
-    if (sessionToken) {
-      await apiLogout(sessionToken).catch(() => {});
-    }
-    logout();
-    toast.success('Logged out');
   };
 
   const handleSave = async () => {
-    if (!sessionToken || !selectedRepo || !project) return;
+    if (!token || !user || !project) return;
     setSaving(true);
     try {
-      const result = await saveProject(sessionToken, selectedRepo, project);
-      toast.success(`Saved ${result.fileCount} files to ${selectedRepo}/${result.path}`);
-    } catch (err: any) {
-      toast.error(err.message || 'Save failed');
+      const result = await saveProject(token, user.login, project);
+      toast.success(`Saved ${result.fileCount} files to ${result.repo}`, {
+        action: { label: 'Open', onClick: () => window.open(result.htmlUrl, '_blank') },
+      });
+    } catch (err) {
+      toast.error((err as Error).message || 'Save failed');
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleReload = async () => {
+    if (!token || !fullName) return;
+    setReloading(true);
+    try {
+      const loaded = await loadProject(token, fullName);
+      upsertProject(loaded);
+      toast.success(`Reloaded ${loaded.name} from GitHub`);
+    } catch (err) {
+      toast.error((err as Error).message || 'Reload failed');
+    } finally {
+      setReloading(false);
     }
   };
 
@@ -78,7 +70,7 @@ export const GitHubPanel = () => {
             <Github className="mx-auto mb-3 text-foreground" size={32} />
             <h3 className="font-display text-sm font-semibold text-foreground">Connect to GitHub</h3>
             <p className="text-muted-foreground text-xs mt-1">
-              Sign in with your GitHub account to save projects to repositories.
+              Sign in to store this project in its own GitHub repository.
             </p>
           </div>
           <Button onClick={handleLogin} className="w-full gap-2 text-xs">
@@ -97,41 +89,40 @@ export const GitHubPanel = () => {
           <p className="font-display text-xs font-semibold text-foreground truncate">{user.name || user.login}</p>
           <p className="text-muted-foreground text-xs">@{user.login}</p>
         </div>
-        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={handleLogout}>
+        <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={logout}>
           <LogOut size={14} />
         </Button>
       </div>
 
-      <div>
-        <Label className="text-xs text-muted-foreground">Repository</Label>
-        <Select value={selectedRepo || ''} onValueChange={setSelectedRepo}>
-          <SelectTrigger className="text-xs h-8 mt-1">
-            <SelectValue placeholder="Select a repo" />
-          </SelectTrigger>
-          <SelectContent>
-            {repos.map((r) => (
-              <SelectItem key={r.full_name} value={r.full_name} className="text-xs">
-                {r.full_name} {r.private ? '🔒' : ''}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {selectedRepo && project && (
+      {project && (
         <div className="border-t border-border pt-4 space-y-3">
           <p className="text-xs text-muted-foreground">
-            Will save to <code className="text-primary">cardforge/{project.name.replace(/[^a-zA-Z0-9-_]/g, '_')}/</code>
+            This project lives in its own {project.isPublic ? 'public' : 'private'} repo:
           </p>
+          <a
+            href={fullName ? `https://github.com/${fullName}` : '#'}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+          >
+            <Github size={12} /> {fullName} <ExternalLink size={10} />
+          </a>
           <ul className="text-xs text-muted-foreground space-y-1">
-            {project.sheets.map((s) => (
-              <li key={s.id}>• <code>{s.name}/</code> — template + data + cards</li>
-            ))}
+            <li>• <code>project.json</code> + per-sheet <code>template / data.csv / data.json / card_N.html</code></li>
+            <li>• <code>images/</code> — uploaded images as real files</li>
+            {project.sheets.some((s) => s.template.elements.some((e) => e.tcgType || e.tcgProperty)) && (
+              <li>• <code>cards.jsonld</code> — TCG annotations</li>
+            )}
           </ul>
-          <Button onClick={handleSave} disabled={saving} className="w-full gap-2 text-xs">
-            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-            {saving ? 'Saving…' : 'Save to GitHub'}
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={handleSave} disabled={saving} className="flex-1 gap-2 text-xs">
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+              {saving ? 'Saving…' : 'Save to GitHub'}
+            </Button>
+            <Button onClick={handleReload} disabled={reloading} variant="outline" className="gap-2 text-xs" title="Reload from GitHub">
+              {reloading ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+            </Button>
+          </div>
         </div>
       )}
     </div>

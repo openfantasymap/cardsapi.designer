@@ -1,31 +1,22 @@
 import { useGitHubStore } from '@/store/useGitHubStore';
-import { initiateGitHubAuth, logout as apiLogout } from '@/services/github';
+import { login } from '@/services/githubAuth';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Github, LogOut, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 export const GitHubAuthButton = () => {
-  const { sessionToken, user, loading, logout } = useGitHubStore();
+  const { token, user, loading, logout } = useGitHubStore();
 
   const handleLogin = async () => {
     try {
-      const url = await initiateGitHubAuth(window.location.href);
-      window.location.href = url;
-    } catch {
-      toast.error('Failed to start GitHub login');
+      await login(window.location.pathname + window.location.search);
+    } catch (e) {
+      toast.error((e as Error).message || 'Failed to start GitHub login');
     }
   };
 
-  const handleLogout = async () => {
-    if (sessionToken) {
-      await apiLogout(sessionToken).catch(() => {});
-    }
-    logout();
-    toast.success('Logged out');
-  };
-
-  if (loading) {
+  if (loading && token && !user) {
     return (
       <Button variant="outline" size="sm" className="gap-2 text-xs" disabled>
         <Loader2 size={14} className="animate-spin" /> Connecting…
@@ -50,7 +41,7 @@ export const GitHubAuthButton = () => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleLogout} className="text-xs gap-2 text-destructive">
+        <DropdownMenuItem onClick={() => { logout(); toast.success('Logged out'); }} className="text-xs gap-2 text-destructive">
           <LogOut size={12} /> Sign out
         </DropdownMenuItem>
       </DropdownMenuContent>

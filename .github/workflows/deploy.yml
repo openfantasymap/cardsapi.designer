@@ -1,0 +1,58 @@
+name: Deploy
+
+# Builds the Vite SPA and publishes it to GitHub Pages.
+#
+# Build-time config comes from repository Variables
+# (Settings → Secrets and variables → Actions → Variables):
+#   VITE_GITHUB_CLIENT_ID  — public OAuth App client id (PKCE login)
+#   VITE_CARDFORGE_API_URL — URL of the stateless proxy (token exchange + remote PDF)
+#
+# Served as a project site at https://openfantasymap.github.io/cardsapi.designer/
+# (vite base = /cardsapi.designer/). To switch to a custom domain later, add a
+# public/CNAME file and set vite base back to "/".
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: Build
+        run: npm run build
+        env:
+          VITE_GITHUB_CLIENT_ID: ${{ vars.VITE_GITHUB_CLIENT_ID }}
+          VITE_CARDFORGE_API_URL: ${{ vars.VITE_CARDFORGE_API_URL }}
+      - name: SPA fallback (client-side routes like /auth/callback and /p/:slug)
+        run: cp dist/index.html dist/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

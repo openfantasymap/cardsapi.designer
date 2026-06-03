@@ -30,12 +30,31 @@ npx vitest run src/test/example.test.ts
 
 This is **CardForge** — a browser-based TCG card designer. Users design card templates, populate them with spreadsheet data, and export/share the results.
 
+### GitHub as backend
+
+There is **no application backend in the data path**. The user signs in with
+GitHub **OAuth Authorization-Code + PKCE** (redirect to GitHub → `/auth/callback`);
+the browser then holds the user's own access token and talks to `api.github.com`
+directly. Persistence layout (mirrors openhistorymap/archaeo-pro):
+
+- **One private repo per project**: `cardforge-<projectId>`, description
+  `cardforge — <name>` — `project.json`, per-sheet `template.json` / `data.csv` /
+  `data.json` / `card_N.html`, `images/<hash>.<ext>` (uploaded images as real
+  files), and `cards.jsonld` when annotated.
+- **One private index repo**: `cardforge-index` with `index.json` + `index.csv`
+  listing every project, so any device discovers them after login.
+
+The only server (`ccc-server`, `VITE_CARDFORGE_API_URL`) is a **stateless proxy**
+for the two things a browser can't do alone: the OAuth token exchange (CORS shim
+that injects the client secret — GitHub requires it even with PKCE) and optional
+remote PDF rendering. The client id (`VITE_GITHUB_CLIENT_ID`) is public.
+
 ### State Management (Zustand)
 
-All application state lives in two Zustand stores — there is no server-side session or local database; projects exist only in memory and are persisted to GitHub via the backend.
+Projects exist only in memory and are persisted to GitHub on demand.
 
-- **`src/store/useProjectStore.ts`** — All card design state: projects, sheets, templates, elements, rows, and active selections. Template operations are scoped to `activeSheetId` + `activeFace` (front/back). The key helpers `mapActiveSheet` and `mapFaceTemplate` are used internally to scope mutations.
-- **`src/store/useGitHubStore.ts`** — GitHub session token, authenticated user, repo list, and selected repo. Session token is persisted in `localStorage` under `cardforge_session_token`.
+- **`src/store/useProjectStore.ts`** — All card design state: projects, sheets, templates, elements, rows, and active selections. Template operations are scoped to `activeSheetId` + `activeFace` (front/back). `upsertProject` adds-or-replaces a project (used when loading from GitHub). The key helpers `mapActiveSheet` and `mapFaceTemplate` are used internally to scope mutations.
+- **`src/store/useGitHubStore.ts`** — The user's GitHub access **token** + authenticated user. Token is persisted in `localStorage` under `cardforge_gh_token`.
 
 ### Data Model (`src/types/card.ts`)
 
@@ -58,22 +77,26 @@ Elements can carry `tcgType` (schema class) and `tcgProperty` annotations from t
 
 ### Routing (`src/App.tsx`)
 
-- `/` — Main app: shows `ProjectDashboard` (no active project) or `CardEditor` (active project). GitHub OAuth callback is handled inline by `GitHubCallbackHandler`.
-- `/p/:projectId` — `PublicCardSet`: read-only gallery of a public project's cards, rendered with HTML microdata annotations using the TCG Schema vocabulary.
+- `/` — Main app: shows `ProjectDashboard` (no active project) or `CardEditor` (active project).
+- `/auth/callback` — `AuthCallback`: exchanges the OAuth `?code` for a token (via the proxy relay), stores the session, and returns to where login started.
+- `/p/:slug` — `PublicCardSet`: read-only gallery of a public project's cards, rendered with HTML microdata annotations using the TCG Schema vocabulary.
 
-### Backend API (`src/services/api.ts`, `src/services/github.ts`)
+### Services (`src/services/`)
 
-Base URL: `VITE_CARDFORGE_API_URL` env var, defaulting to `/api`.
+Base proxy URL: `VITE_CARDFORGE_API_URL` env var, defaulting to `/api`.
 
-- **Auth**: Server-side GitHub App OAuth. `initiateGitHubAuth` → redirect → `handleGitHubCallback` → session token.
-- **Projects**: `saveProject` / `loadProject` — persist/retrieve full `CardProject` JSON to/from a GitHub repo.
-- **Repos**: `listRepos` — list repos the user can push to.
+- **`githubAuth.ts`** — PKCE Authorization-Code login: `login()` builds the PKCE challenge/state and redirects to GitHub; `completeLogin(code, state)` validates state and relays the code to the proxy's `/auth/github/exchange` for a token.
+- **`githubApi.ts`** — direct GitHub REST + Git Data API: `getUser`, `ensureRepo` (create private + auto-init), `commitFiles` (atomic blob→tree→commit→ref), `getFile`/`getFileText`, base64/binary helpers.
+- **`assets.ts`** — `extractAssets` pulls embedded `data:` images out into `images/<sha1>.<ext>` and rewrites refs to relative paths; `inlineAssets` does the reverse on load (fetches files, rebuilds data URLs) so private repos render.
+- **`cardFiles.ts`** — pure builders (`buildProjectTextFiles`, `buildCardHtml`, `cardInnerHtml`, `buildCsv`, `buildJsonLd`) shared by the repo writer and the ZIP/PDF exporters.
+- **`projects.ts`** — orchestration: `saveProject` (extract assets → commit to `cardforge-<projectId>` → upsert index keyed by id), `loadProject` (read + inline assets), and index helpers (`listProjects`, `readIndex`, `upsertIndexEntry`).
 
 ### Export (`src/services/export.ts`)
 
 - **JSON**: Direct browser download of project JSON.
-- **ZIP**: JSZip bundle containing `project.json`, per-sheet `template.json`, `data.csv`, `data.json`, and one `card_N.html` per row.
-- **PDF**: POSTs project JSON to `POST /api/projects/:id/export/pdf`, backend returns a PDF blob.
+- **ZIP**: JSZip bundle built from `buildProjectTextFiles` (mirrors the repo layout; images stay inline as data URLs).
+- **PDF (local)**: `exportProjectPdfLocal` opens a self-contained print window (all cards, images inlined) → "Save as PDF". Fully client-side.
+- **PDF (remote)**: `exportProjectPdfRemote` POSTs to the proxy's `/render/pdf` (WeasyPrint) for high-fidelity output.
 
 ### UI Components
 
@@ -84,4 +107,6 @@ Application-level components:
 - `ElementPanel` — sidebar for adding/editing/styling elements on the active template face.
 - `SpreadsheetPanel` — inline spreadsheet for `CardRow` data.
 - `CardPreviewGrid` — renders all rows merged with the template as a preview grid.
-- `GitHubPanel` / `GitHubAuthButton` / `GitHubCallbackHandler` — GitHub auth and repo push UI.
+- `GitHubAuthButton` — sign-in (redirects to GitHub via `login()`) / sign-out.
+- `GitHubPanel` — save the active project to its `cardforge-<projectId>` repo and reload it from GitHub.
+- `ProjectDashboard` — lists local projects plus projects discovered in the `cardforge-index` repo; opening a remote one loads it via `loadProject`.
