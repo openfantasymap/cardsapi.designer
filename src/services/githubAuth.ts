@@ -37,6 +37,21 @@ export const clearToken = () => localStorage.removeItem(TOKEN_KEY);
 
 // ── PKCE helpers ───────────────────────────────────────────────────────────--
 
+/**
+ * Web Crypto (`crypto.subtle`) is only available in a secure context — HTTPS or
+ * http://localhost. Opening the app over http://<ip> leaves it undefined, which
+ * otherwise surfaces as a cryptic "Cannot read properties of undefined
+ * (reading 'digest')". Fail with an actionable message instead.
+ */
+export const assertSecureContext = () => {
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    throw new Error(
+      'GitHub sign-in needs a secure context. Open this app over https:// ' +
+        '(or http://localhost during dev) — not an http:// IP address.',
+    );
+  }
+};
+
 const base64Url = (bytes: Uint8Array): string => {
   let s = '';
   bytes.forEach((b) => (s += String.fromCharCode(b)));
@@ -52,6 +67,7 @@ const sha256 = async (text: string): Promise<Uint8Array> =>
 
 /** Step 1 — redirect to GitHub. The page navigates away (promise won't resolve). */
 export const login = async (returnTo: string = window.location.pathname): Promise<void> => {
+  assertSecureContext();
   if (!CLIENT_ID) {
     throw new Error('VITE_GITHUB_CLIENT_ID is not configured. Register a GitHub OAuth App and set it.');
   }

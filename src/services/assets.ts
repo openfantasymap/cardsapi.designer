@@ -56,6 +56,11 @@ const parseDataUrl = (dataUrl: string): DataUrlParts | null => {
 };
 
 const sha1Hex = async (bytes: Uint8Array): Promise<string> => {
+  if (typeof crypto === 'undefined' || !crypto.subtle) {
+    throw new Error(
+      'Saving images needs a secure context. Open this app over https:// (or http://localhost), not an http:// IP address.',
+    );
+  }
   const digest = await crypto.subtle.digest('SHA-1', bytes);
   return Array.from(new Uint8Array(digest))
     .map((b) => b.toString(16).padStart(2, '0'))
