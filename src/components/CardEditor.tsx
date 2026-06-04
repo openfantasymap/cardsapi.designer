@@ -115,7 +115,7 @@ export const CardEditor = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-screen overflow-hidden flex flex-col bg-background">
       <header className="h-12 border-b border-border flex items-center px-4 gap-3">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActiveProject(null)}>
           <ArrowLeft size={16} />
@@ -286,7 +286,7 @@ export const CardEditor = () => {
       </div>
 
       {sheet && (
-        <Tabs defaultValue="design" className="flex-1 flex flex-col overflow-hidden">
+        <Tabs defaultValue="design" className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div className="border-b border-border px-4 flex items-center">
             <TabsList className="h-9 bg-transparent p-0 gap-4">
               <TabsTrigger value="design" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
