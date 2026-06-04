@@ -14,7 +14,9 @@
  *   3. completeLogin(code, state) → relay exchange → store token
  */
 
-const PROXY_BASE = import.meta.env.VITE_CARDFORGE_API_URL || '/api';
+// Trailing slashes are stripped so `${PROXY_BASE}/auth/...` never produces a
+// double slash — Vercel 301-redirects `//`, which breaks the CORS preflight.
+const PROXY_BASE = (import.meta.env.VITE_CARDFORGE_API_URL || '/api').replace(/\/+$/, '');
 const CLIENT_ID = import.meta.env.VITE_GITHUB_CLIENT_ID || '';
 const SCOPES = ['repo'];
 

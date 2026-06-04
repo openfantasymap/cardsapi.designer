@@ -3,7 +3,7 @@ import { saveAs } from 'file-saver';
 import { CardProject } from '@/types/card';
 import { buildProjectTextFiles, cardInnerHtml } from '@/services/cardFiles';
 
-const API_BASE = import.meta.env.VITE_CARDFORGE_API_URL || '/api';
+const API_BASE = (import.meta.env.VITE_CARDFORGE_API_URL || '/api').replace(/\/+$/, '');
 
 /** Export project as JSON download */
 export const exportProjectJson = (project: CardProject) => {
