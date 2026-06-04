@@ -11,10 +11,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { exportProjectJson, exportProjectZip, exportProjectPdfLocal, exportProjectPdfRemote } from '@/services/export';
+import { exportProjectJson, exportProjectZip, exportProjectPdfRemote } from '@/services/export';
+import { exportProjectImages, exportProjectPdf as exportProjectPdfLocalGenerated } from '@/services/render';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
@@ -215,14 +216,15 @@ export const CardEditor = () => {
               <DropdownMenuItem onClick={async () => { await exportProjectZip(project); toast.success('ZIP exported'); }}>
                 <Download size={14} className="mr-2" /> ZIP (JSON + HTML)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => {
-                try {
-                  exportProjectPdfLocal(project);
-                } catch (err: any) {
-                  toast.error(err.message || 'Local PDF failed');
-                }
-              }}>
-                <FileText size={14} className="mr-2" /> PDF (local — print/save)
+              <DropdownMenuItem onClick={() => toast.promise(exportProjectImages(project), {
+                loading: 'Rendering images…', success: 'Images downloaded', error: (e) => e?.message || 'Render failed',
+              })}>
+                <ImageIcon size={14} className="mr-2" /> Images (PNG)
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => toast.promise(exportProjectPdfLocalGenerated(project), {
+                loading: 'Rendering PDF…', success: 'PDF downloaded', error: (e) => e?.message || 'Render failed',
+              })}>
+                <FileText size={14} className="mr-2" /> PDF (local)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={async () => {
                 try {
