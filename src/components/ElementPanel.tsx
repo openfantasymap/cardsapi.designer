@@ -181,10 +181,10 @@ export const ElementPanel = () => {
                 <>
                   <div>
                     <Label className="text-xs text-muted-foreground">Font</Label>
-                    <Select value={selectedElement.style.fontFamily || ''} onValueChange={(v) => setStyle({ fontFamily: v })}>
+                    <Select value={selectedElement.style.fontFamily || '__default__'} onValueChange={(v) => setStyle({ fontFamily: v === '__default__' ? '' : v })}>
                       <SelectTrigger className="text-xs h-8 mt-1"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {FONT_FAMILIES.map((f) => <SelectItem key={f.label} value={f.value} className="text-xs">{f.label}</SelectItem>)}
+                        {FONT_FAMILIES.map((f) => <SelectItem key={f.label} value={f.value || '__default__'} className="text-xs">{f.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
