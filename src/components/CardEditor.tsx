@@ -1,5 +1,6 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
+import { useHistoryStore } from '@/store/history';
 import { slugify } from '@/types/card';
 import { CardCanvas } from '@/components/CardCanvas';
 import { ElementPanel } from '@/components/ElementPanel';
@@ -10,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportProjectJson, exportProjectZip, exportProjectPdfLocal, exportProjectPdfRemote } from '@/services/export';
@@ -21,9 +22,10 @@ export const CardEditor = () => {
   const {
     projects, activeProjectId, activeSheetId, activeFace,
     setActiveProject, setActiveSheet, setActiveFace,
-    addSheet, removeSheet, renameSheet,
+    addSheet, duplicateSheet, removeSheet, renameSheet,
     updateTemplateBackground, enableBackTemplate, removeBackTemplate, togglePublic, updateSlug,
   } = useProjectStore();
+  const { undo, redo, past, future } = useHistoryStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -32,6 +34,23 @@ export const CardEditor = () => {
   const [editingSlug, setEditingSlug] = useState(false);
   const [slugValue, setSlugValue] = useState('');
   const [copied, setCopied] = useState(false);
+
+  // Undo / redo keyboard shortcuts (skip while typing in a field).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const t = document.activeElement;
+      if (t && ['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName)) return;
+      if ((e.metaKey || e.ctrlKey) && (e.key === 'z' || e.key === 'Z')) {
+        e.preventDefault();
+        if (e.shiftKey) redo(); else undo();
+      } else if ((e.metaKey || e.ctrlKey) && (e.key === 'y' || e.key === 'Y')) {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [undo, redo]);
 
   const handleSlugEdit = () => {
     setSlugValue(project?.slug ?? '');
@@ -125,6 +144,17 @@ export const CardEditor = () => {
           )}
         </div>
         <div className="ml-auto flex gap-2 items-center">
+          {/* Undo / redo */}
+          <div className="flex items-center gap-0.5">
+            <Button variant="ghost" size="icon" className="h-8 w-8 disabled:opacity-40" title="Undo (⌘Z)" disabled={past.length === 0} onClick={undo}>
+              <Undo2 size={15} />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-8 w-8 disabled:opacity-40" title="Redo (⇧⌘Z)" disabled={future.length === 0} onClick={redo}>
+              <Redo2 size={15} />
+            </Button>
+          </div>
+          <div className="border-l border-border h-6" />
+
           {/* Public toggle + copy URL */}
           <div className="flex items-center gap-1.5">
             <Globe size={12} className={project.isPublic ? 'text-primary' : 'text-muted-foreground'} />
@@ -245,9 +275,14 @@ export const CardEditor = () => {
             )}
           </div>
         ))}
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleAddSheet}>
+        <Button variant="ghost" size="icon" className="h-7 w-7" title="Add sheet" onClick={handleAddSheet}>
           <Plus size={12} />
         </Button>
+        {activeSheetId && (
+          <Button variant="ghost" size="icon" className="h-7 w-7" title="Duplicate sheet" onClick={() => duplicateSheet(activeProjectId!, activeSheetId)}>
+            <CopyPlus size={12} />
+          </Button>
+        )}
       </div>
 
       {sheet && (

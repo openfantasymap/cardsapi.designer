@@ -22,6 +22,7 @@ interface ProjectStore {
 
   // Sheet management
   addSheet: (projectId: string, name: string) => string;
+  duplicateSheet: (projectId: string, sheetId: string) => void;
   removeSheet: (projectId: string, sheetId: string) => void;
   renameSheet: (projectId: string, sheetId: string, name: string) => void;
 
@@ -188,6 +189,28 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       activeFace: 'front',
     }));
     return sheetId;
+  },
+
+  duplicateSheet: (projectId, sheetId) => {
+    const newSheetId = generateId();
+    set((s) => {
+      const project = s.projects.find((p) => p.id === projectId);
+      const src = project?.sheets.find((sh) => sh.id === sheetId);
+      if (!src) return s;
+      const clone: CardSheet = JSON.parse(JSON.stringify(src));
+      clone.id = newSheetId;
+      clone.name = `${src.name} copy`;
+      clone.template = { ...clone.template, id: generateId(), elements: clone.template.elements.map((e) => ({ ...e, id: generateId() })) };
+      if (clone.backTemplate) {
+        clone.backTemplate = { ...clone.backTemplate, id: generateId(), elements: clone.backTemplate.elements.map((e) => ({ ...e, id: generateId() })) };
+      }
+      return {
+        projects: s.projects.map((p) => (p.id === projectId ? { ...p, sheets: [...p.sheets, clone] } : p)),
+        activeSheetId: newSheetId,
+        selectedElementId: null,
+        activeFace: 'front' as TemplateFace,
+      };
+    });
   },
 
   removeSheet: (projectId, sheetId) =>
