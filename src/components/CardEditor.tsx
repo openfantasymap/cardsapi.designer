@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportProjectJson, exportProjectZip, exportProjectPdfLocal, exportProjectPdfRemote } from '@/services/export';
@@ -24,6 +24,7 @@ export const CardEditor = () => {
     setActiveProject, setActiveSheet, setActiveFace,
     addSheet, duplicateSheet, removeSheet, renameSheet,
     updateTemplateBackground, enableBackTemplate, removeBackTemplate, togglePublic, updateSlug,
+    editingProjectBack, editProjectBack, exitProjectBack,
   } = useProjectStore();
   const { undo, redo, past, future } = useHistoryStore();
   const project = projects.find((p) => p.id === activeProjectId);
@@ -34,6 +35,7 @@ export const CardEditor = () => {
   const [editingSlug, setEditingSlug] = useState(false);
   const [slugValue, setSlugValue] = useState('');
   const [copied, setCopied] = useState(false);
+  const [tab, setTab] = useState('design');
 
   // Undo / redo keyboard shortcuts (skip while typing in a field).
   useEffect(() => {
@@ -189,6 +191,17 @@ export const CardEditor = () => {
             <RotateCcw size={12} /> {sheet?.backTemplate ? 'Remove Back' : 'Add Back'}
           </Button>
 
+          {/* Global card back editor */}
+          <Button
+            variant={editingProjectBack ? 'default' : 'outline'}
+            size="sm"
+            className="gap-1 text-xs"
+            title="Design the shared card back (used as the default when adding a back to a sheet)"
+            onClick={() => { if (editingProjectBack) { exitProjectBack(); } else { setTab('design'); editProjectBack(activeProjectId!); } }}
+          >
+            <SquareStack size={12} /> Card Back
+          </Button>
+
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1 text-xs">
@@ -285,8 +298,19 @@ export const CardEditor = () => {
         )}
       </div>
 
+      {/* Global-back editing banner */}
+      {editingProjectBack && (
+        <div className="bg-primary/10 border-b border-primary/30 px-4 py-1.5 flex items-center gap-2 text-xs">
+          <SquareStack size={12} className="text-primary shrink-0" />
+          <span className="text-foreground">
+            Editing the <strong>global card back</strong> — used as the default when you add a back to a sheet.
+          </span>
+          <Button variant="ghost" size="sm" className="ml-auto h-6 text-xs" onClick={exitProjectBack}>Done</Button>
+        </div>
+      )}
+
       {sheet && (
-        <Tabs defaultValue="design" className="flex-1 min-h-0 flex flex-col overflow-hidden">
+        <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
           <div className="border-b border-border px-4 flex items-center">
             <TabsList className="h-9 bg-transparent p-0 gap-4">
               <TabsTrigger value="design" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
@@ -301,7 +325,7 @@ export const CardEditor = () => {
             </TabsList>
 
             {/* Front/Back face toggle — only in Design tab context */}
-            {sheet.backTemplate && (
+            {sheet.backTemplate && !editingProjectBack && (
               <div className="ml-auto flex gap-1">
                 <button
                   onClick={() => setActiveFace('front')}

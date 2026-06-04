@@ -109,6 +109,9 @@ export interface CardProject {
   slug: string;
   isPublic?: boolean;
   sheets: CardSheet[];
+  /** Reusable global card back. Designed once at the project level; "Add Back"
+   *  on a sheet seeds the sheet's back from this, after which they diverge. */
+  back?: CardTemplate;
 }
 
 export const slugify = (name: string): string =>

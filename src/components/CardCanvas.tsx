@@ -107,11 +107,11 @@ const snapAxis = (pos: number, size: number, targets: number[]): { pos: number; 
 };
 
 export const CardCanvas = () => {
-  const { projects, activeProjectId, activeSheetId, selectedElementId, activeFace, setSelectedElement, updateElement, removeElement, duplicateElement } =
+  const { projects, activeProjectId, activeSheetId, selectedElementId, activeFace, editingProjectBack, setSelectedElement, updateElement, removeElement, duplicateElement } =
     useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
-  const template = activeFace === 'back' ? sheet?.backTemplate : sheet?.template;
+  const template = editingProjectBack ? project?.back : activeFace === 'back' ? sheet?.backTemplate : sheet?.template;
 
   const containerRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);

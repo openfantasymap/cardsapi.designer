@@ -29,12 +29,12 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 
 export const ElementPanel = () => {
   const {
-    projects, activeProjectId, activeSheetId, selectedElementId, activeFace,
+    projects, activeProjectId, activeSheetId, selectedElementId, activeFace, editingProjectBack,
     addElement, updateElement, removeElement, duplicateElement, reorderElement, setSelectedElement,
   } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
-  const template = activeFace === 'back' ? sheet?.backTemplate : sheet?.template;
+  const template = editingProjectBack ? project?.back : activeFace === 'back' ? sheet?.backTemplate : sheet?.template;
   const selectedElement = template?.elements.find((el) => el.id === selectedElementId);
   const [newTag, setNewTag] = useState('');
   const svgRef = useRef<HTMLInputElement>(null);

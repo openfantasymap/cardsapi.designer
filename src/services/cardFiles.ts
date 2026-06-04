@@ -123,6 +123,11 @@ export const buildProjectTextFiles = (project: CardProject): Array<{ path: strin
 
   files.push({ path: 'project.json', text: JSON.stringify(project, null, 2) });
 
+  // Global shared card back (if defined).
+  if (project.back) {
+    files.push({ path: 'back/template.json', text: JSON.stringify(project.back, null, 2) });
+  }
+
   for (const sheet of project.sheets) {
     const folder = sheetFolder(sheet.name);
     files.push({ path: `${folder}/template.json`, text: JSON.stringify(sheet.template, null, 2) });

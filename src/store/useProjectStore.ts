@@ -9,6 +9,8 @@ interface ProjectStore {
   activeSheetId: string | null;
   selectedElementId: string | null;
   activeFace: TemplateFace;
+  /** When true, the canvas/panel edit the project-level global back instead of a sheet. */
+  editingProjectBack: boolean;
 
   createProject: (name: string, description: string) => string;
   upsertProject: (project: CardProject) => void;
@@ -17,6 +19,9 @@ interface ProjectStore {
   setActiveSheet: (id: string | null) => void;
   setSelectedElement: (id: string | null) => void;
   setActiveFace: (face: TemplateFace) => void;
+  /** Enter the global-back editor (creates project.back if missing). */
+  editProjectBack: (projectId: string) => void;
+  exitProjectBack: () => void;
   togglePublic: (projectId: string) => void;
   updateSlug: (projectId: string, slug: string) => boolean;
 
@@ -85,12 +90,28 @@ const mapFaceTemplate = (
   return { ...sheet, template: fn(sheet.template) };
 };
 
+/**
+ * Map whichever template is currently being edited: the project-level global
+ * back (when `editingProjectBack`) or the active sheet's active face.
+ */
+const mapEditTarget = (
+  s: { projects: CardProject[]; activeProjectId: string | null; activeSheetId: string | null; activeFace: TemplateFace; editingProjectBack: boolean },
+  projectId: string,
+  fn: (t: CardTemplate) => CardTemplate
+): CardProject[] => {
+  if (s.editingProjectBack) {
+    return s.projects.map((p) => (p.id === projectId && p.back ? { ...p, back: fn(p.back) } : p));
+  }
+  return mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) => mapFaceTemplate(sh, s.activeFace, fn));
+};
+
 export const useProjectStore = create<ProjectStore>((set, get) => ({
   projects: [],
   activeProjectId: null,
   activeSheetId: null,
   selectedElementId: null,
   activeFace: 'front',
+  editingProjectBack: false,
 
   createProject: (name, description) => {
     const id = generateId();
@@ -138,7 +159,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
 
   setActiveProject: (id) => {
     if (!id) {
-      set({ activeProjectId: null, activeSheetId: null, selectedElementId: null, activeFace: 'front' });
+      set({ activeProjectId: null, activeSheetId: null, selectedElementId: null, activeFace: 'front', editingProjectBack: false });
       return;
     }
     const project = get().projects.find((p) => p.id === id);
@@ -147,12 +168,29 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       activeSheetId: project?.sheets[0]?.id ?? null,
       selectedElementId: null,
       activeFace: 'front',
+      editingProjectBack: false,
     });
   },
 
-  setActiveSheet: (id) => set({ activeSheetId: id, selectedElementId: null, activeFace: 'front' }),
+  setActiveSheet: (id) => set({ activeSheetId: id, selectedElementId: null, activeFace: 'front', editingProjectBack: false }),
   setSelectedElement: (id) => set({ selectedElementId: id }),
-  setActiveFace: (face) => set({ activeFace: face, selectedElementId: null }),
+  setActiveFace: (face) => set({ activeFace: face, selectedElementId: null, editingProjectBack: false }),
+
+  editProjectBack: (projectId) =>
+    set((s) => {
+      const project = s.projects.find((p) => p.id === projectId);
+      const ref = project?.sheets[0]?.template;
+      const projects = project?.back
+        ? s.projects
+        : s.projects.map((p) =>
+            p.id === projectId
+              ? { ...p, back: { ...makeDefaultTemplate(), name: 'Card Back', width: ref?.width ?? 350, height: ref?.height ?? 490 } }
+              : p
+          );
+      return { projects, editingProjectBack: true, selectedElementId: null };
+    }),
+
+  exitProjectBack: () => set({ editingProjectBack: false, selectedElementId: null }),
 
   togglePublic: (projectId) =>
     set((s) => ({
@@ -232,18 +270,21 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       projects: mapActiveSheet(s.projects, projectId, sheetId, (sh) => ({ ...sh, name })),
     })),
 
-  // Back template
+  // Back template — seed from the project's global back if defined, else blank.
   enableBackTemplate: (projectId) =>
-    set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) => ({
-        ...sh,
-        backTemplate: sh.backTemplate ?? {
-          ...makeDefaultTemplate(),
-          width: sh.template.width,
-          height: sh.template.height,
-        },
-      })),
-    })),
+    set((s) => {
+      const globalBack = s.projects.find((p) => p.id === projectId)?.back;
+      const seed = (sh: CardSheet): CardTemplate =>
+        globalBack
+          ? { ...globalBack, id: generateId(), elements: globalBack.elements.map((e) => ({ ...e, id: generateId(), style: { ...e.style } })) }
+          : { ...makeDefaultTemplate(), width: sh.template.width, height: sh.template.height };
+      return {
+        projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) => ({
+          ...sh,
+          backTemplate: sh.backTemplate ?? seed(sh),
+        })),
+      };
+    }),
 
   removeBackTemplate: (projectId) =>
     set((s) => ({
@@ -255,81 +296,61 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
       selectedElementId: null,
     })),
 
-  // Element ops — scoped to activeSheet + activeFace
+  // Element ops — target the active sheet face, or the global back when editing it.
   addElement: (projectId, element) =>
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
-        mapFaceTemplate(sh, s.activeFace, (t) => ({
-          ...t,
-          elements: [...t.elements, element],
-        }))
-      ),
+      projects: mapEditTarget(s, projectId, (t) => ({ ...t, elements: [...t.elements, element] })),
     })),
 
   updateElement: (projectId, elementId, updates) =>
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
-        mapFaceTemplate(sh, s.activeFace, (t) => ({
-          ...t,
-          elements: t.elements.map((el) =>
-            el.id === elementId ? { ...el, ...updates } : el
-          ),
-        }))
-      ),
+      projects: mapEditTarget(s, projectId, (t) => ({
+        ...t,
+        elements: t.elements.map((el) => (el.id === elementId ? { ...el, ...updates } : el)),
+      })),
     })),
 
   removeElement: (projectId, elementId) =>
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
-        mapFaceTemplate(sh, s.activeFace, (t) => ({
-          ...t,
-          elements: t.elements.filter((el) => el.id !== elementId),
-        }))
-      ),
+      projects: mapEditTarget(s, projectId, (t) => ({
+        ...t,
+        elements: t.elements.filter((el) => el.id !== elementId),
+      })),
       selectedElementId: s.selectedElementId === elementId ? null : s.selectedElementId,
     })),
 
   duplicateElement: (projectId, elementId) => {
     const newId = generateId();
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
-        mapFaceTemplate(sh, s.activeFace, (t) => {
-          const src = t.elements.find((el) => el.id === elementId);
-          if (!src) return t;
-          const copy: CardElement = { ...src, id: newId, x: src.x + 12, y: src.y + 12, style: { ...src.style } };
-          return { ...t, elements: [...t.elements, copy] };
-        })
-      ),
+      projects: mapEditTarget(s, projectId, (t) => {
+        const src = t.elements.find((el) => el.id === elementId);
+        if (!src) return t;
+        const copy: CardElement = { ...src, id: newId, x: src.x + 12, y: src.y + 12, style: { ...src.style } };
+        return { ...t, elements: [...t.elements, copy] };
+      }),
       selectedElementId: newId,
     }));
   },
 
   reorderElement: (projectId, elementId, dir) =>
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
-        mapFaceTemplate(sh, s.activeFace, (t) => {
-          const els = [...t.elements];
-          const i = els.findIndex((el) => el.id === elementId);
-          if (i < 0) return t;
-          const [el] = els.splice(i, 1);
-          // Render order = array order (later draws on top).
-          if (dir === 'front') els.push(el);
-          else if (dir === 'back') els.unshift(el);
-          else if (dir === 'forward') els.splice(Math.min(i + 1, els.length), 0, el);
-          else els.splice(Math.max(i - 1, 0), 0, el);
-          return { ...t, elements: els };
-        })
-      ),
+      projects: mapEditTarget(s, projectId, (t) => {
+        const els = [...t.elements];
+        const i = els.findIndex((el) => el.id === elementId);
+        if (i < 0) return t;
+        const [el] = els.splice(i, 1);
+        // Render order = array order (later draws on top).
+        if (dir === 'front') els.push(el);
+        else if (dir === 'back') els.unshift(el);
+        else if (dir === 'forward') els.splice(Math.min(i + 1, els.length), 0, el);
+        else els.splice(Math.max(i - 1, 0), 0, el);
+        return { ...t, elements: els };
+      }),
     })),
 
   updateTemplateBackground: (projectId, bg) =>
     set((s) => ({
-      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
-        mapFaceTemplate(sh, s.activeFace, (t) => ({
-          ...t,
-          backgroundImage: bg,
-        }))
-      ),
+      projects: mapEditTarget(s, projectId, (t) => ({ ...t, backgroundImage: bg })),
     })),
 
   // Row ops — scoped to activeSheet

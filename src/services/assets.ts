@@ -104,6 +104,8 @@ const mapImageStrings = async (
       }
     }
   }
+  // Project-level global card back.
+  await mapTemplate(clone.back);
   return clone;
 };
 
