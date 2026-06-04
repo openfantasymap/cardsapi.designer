@@ -115,7 +115,7 @@ export const CardEditor = () => {
   };
 
   return (
-    <div className="h-screen overflow-hidden flex flex-col bg-background">
+    <div className="fixed inset-0 overflow-hidden flex flex-col bg-background">
       <header className="h-12 border-b border-border flex items-center px-4 gap-3">
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActiveProject(null)}>
           <ArrowLeft size={16} />
