@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon, Eye,
   Copy, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
-  ChevronsUp, ChevronUp, ChevronDown, ChevronsDown,
+  ChevronsUp, ChevronUp, ChevronDown, ChevronsDown, Upload, X,
 } from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
@@ -38,6 +38,8 @@ export const ElementPanel = () => {
   const selectedElement = template?.elements.find((el) => el.id === selectedElementId);
   const [newTag, setNewTag] = useState('');
   const svgRef = useRef<HTMLInputElement>(null);
+  const imgRef = useRef<HTMLInputElement>(null);
+  const replaceImgRef = useRef<HTMLInputElement>(null);
   const columns: string[] = Array.from(new Set((sheet?.rows ?? []).flatMap((r) => Object.keys(r))));
 
   if (!template || !activeProjectId) return null;
@@ -47,10 +49,10 @@ export const ElementPanel = () => {
     updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, ...patch } });
   };
 
-  const handleAddElement = (type: CardElement['type'], svgData?: string) => {
+  const handleAddElement = (type: CardElement['type'], dataUrl?: string) => {
     const defaults: Record<string, { w: number; h: number }> = {
       text: { w: 200, h: 32 }, icon: { w: 40, h: 40 }, hline: { w: 200, h: 2 },
-      vline: { w: 2, h: 100 }, svg: { w: 60, h: 60 }, image: { w: 80, h: 80 },
+      vline: { w: 2, h: 100 }, svg: { w: 60, h: 60 }, image: { w: 160, h: 200 },
     };
     const d = defaults[type] ?? { w: 80, h: 80 };
     const tag = newTag.trim() || `{{${type}}}`;
@@ -58,7 +60,9 @@ export const ElementPanel = () => {
       id: generateId(), type, tag, x: 20, y: 20 + template.elements.length * 40, width: d.w, height: d.h,
       style: {
         fontSize: type === 'text' ? 14 : 24, color: 'hsl(210 20% 92%)',
-        strokeWidth: (type === 'hline' || type === 'vline') ? 2 : undefined, svgData,
+        strokeWidth: (type === 'hline' || type === 'vline') ? 2 : undefined,
+        svgData: type === 'svg' ? dataUrl : undefined,
+        imageUrl: type === 'image' ? dataUrl : undefined,
       },
     };
     addElement(activeProjectId, element);
@@ -66,27 +70,24 @@ export const ElementPanel = () => {
     setNewTag('');
   };
 
-  const handleSvgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Read a picked file as a data URL and hand it to `done` (then clear the input).
+  const readFile = (e: React.ChangeEvent<HTMLInputElement>, done: (dataUrl: string) => void) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => handleAddElement('svg', reader.result as string);
+    reader.onload = () => done(reader.result as string);
     reader.readAsDataURL(file);
-    e.target.value = '';
   };
 
-  const handleReplaceSvg = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !selectedElement) return;
-    const reader = new FileReader();
-    reader.onload = () => setStyle({ svgData: reader.result as string });
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  };
+  const handleSvgUpload = (e: React.ChangeEvent<HTMLInputElement>) => readFile(e, (d) => handleAddElement('svg', d));
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => readFile(e, (d) => handleAddElement('image', d));
+  const handleReplaceSvg = (e: React.ChangeEvent<HTMLInputElement>) => readFile(e, (d) => setStyle({ svgData: d }));
+  const handleReplaceImage = (e: React.ChangeEvent<HTMLInputElement>) => readFile(e, (d) => setStyle({ imageUrl: d }));
 
   const iconMap: Record<string, React.ReactNode> = {
     text: <Type size={12} />, icon: <Diamond size={12} />, hline: <Minus size={12} />,
-    vline: <SeparatorVertical size={12} />, svg: <FileImage size={12} />, image: <FileImage size={12} />,
+    vline: <SeparatorVertical size={12} />, svg: <FileImage size={12} />, image: <ImageIcon size={12} />,
   };
 
   const num = (v: number | undefined, fallback: number) => (v === undefined ? fallback : v);
@@ -98,16 +99,23 @@ export const ElementPanel = () => {
       {/* Add */}
       <div>
         <SectionLabel>Add Element</SectionLabel>
-        <Input placeholder="Tag name e.g. {{name}}" value={newTag} onChange={(e) => setNewTag(e.target.value)} className="text-xs h-8 mb-2" />
+        <Input placeholder="Tag, e.g. {{name}}" value={newTag} onChange={(e) => setNewTag(e.target.value)} className="text-xs h-8" />
+        <p className="text-[11px] text-muted-foreground mt-1 mb-2 leading-snug">
+          Bind to a spreadsheet column with <code className="text-primary">{'{{column}}'}</code>, or leave blank for static content.
+        </p>
+        <input ref={imgRef} type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+        <input ref={svgRef} type="file" accept=".svg,image/svg+xml" className="hidden" onChange={handleSvgUpload} />
         <div className="grid grid-cols-2 gap-2">
+          <Button variant="default" size="sm" className="gap-1 text-xs" onClick={() => imgRef.current?.click()}><ImageIcon size={12} /> Image</Button>
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('text')}><Type size={12} /> Text</Button>
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => svgRef.current?.click()}><FileImage size={12} /> SVG</Button>
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('icon')}><Diamond size={12} /> Icon</Button>
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('hline')}><Minus size={12} /> H-Line</Button>
           <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('vline')}><SeparatorVertical size={12} /> V-Line</Button>
         </div>
-        <input ref={svgRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
-        <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-2" onClick={() => svgRef.current?.click()}><FileImage size={12} /> Upload SVG</Button>
-        <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-1" onClick={() => handleAddElement('image')}><ImageIcon size={12} /> Image</Button>
+        <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+          <strong>Image</strong> uploads a file. For per-card art, set its tag to a column like <code className="text-primary">{'{{art}}'}</code>.
+        </p>
       </div>
 
       {/* Layers list */}
@@ -263,9 +271,24 @@ export const ElementPanel = () => {
               </div>
             )}
             {selectedElement.type === 'image' && (
-              <div>
-                <Label className="text-xs text-muted-foreground">Image URL</Label>
-                <Input placeholder="https://example.com/image.png" value={selectedElement.style.imageUrl || ''} onChange={(e) => setStyle({ imageUrl: e.target.value })} className="text-xs h-8 mt-1" />
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">Image</Label>
+                <input ref={replaceImgRef} type="file" accept="image/*" className="hidden" onChange={handleReplaceImage} />
+                <div className="flex items-center gap-2">
+                  {selectedElement.style.imageUrl ? (
+                    <img src={selectedElement.style.imageUrl} alt="" className="h-10 w-10 rounded object-cover border border-border shrink-0" />
+                  ) : (
+                    <div className="h-10 w-10 rounded border border-dashed border-border flex items-center justify-center text-[10px] text-muted-foreground shrink-0">none</div>
+                  )}
+                  <Button variant="outline" size="sm" className="gap-1 text-xs flex-1" onClick={() => replaceImgRef.current?.click()}><Upload size={12} /> Upload</Button>
+                  {selectedElement.style.imageUrl && (
+                    <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive shrink-0" title="Clear image" onClick={() => setStyle({ imageUrl: '' })}><X size={14} /></Button>
+                  )}
+                </div>
+                <Input placeholder="…or paste an image URL" value={selectedElement.style.imageUrl || ''} onChange={(e) => setStyle({ imageUrl: e.target.value })} className="text-xs h-8" />
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  A bound tag like <code className="text-primary">{'{{art}}'}</code> overrides this with each card's value.
+                </p>
               </div>
             )}
           </div>
