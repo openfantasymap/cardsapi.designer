@@ -62,7 +62,16 @@ export interface CardElement {
   style: {
     fontSize?: number;
     fontWeight?: string;
+    fontStyle?: 'normal' | 'italic';
+    fontFamily?: string;
+    textAlign?: 'left' | 'center' | 'right';
     color?: string;
+    backgroundColor?: string;
+    opacity?: number;
+    borderWidth?: number;
+    borderColor?: string;
+    borderRadius?: number;
+    shadow?: boolean;
     iconName?: string;
     strokeWidth?: number;
     svgData?: string;

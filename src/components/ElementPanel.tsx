@@ -5,12 +5,33 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon, Eye } from 'lucide-react';
+import {
+  Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon, Eye,
+  Copy, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
+  ChevronsUp, ChevronUp, ChevronDown, ChevronsDown,
+} from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
 
+const FONT_FAMILIES: { label: string; value: string }[] = [
+  { label: 'Default', value: '' },
+  { label: 'Sans', value: 'system-ui, sans-serif' },
+  { label: 'Serif', value: 'Georgia, serif' },
+  { label: 'Mono', value: 'ui-monospace, monospace' },
+  { label: 'Impact', value: 'Impact, sans-serif' },
+  { label: 'Times', value: '"Times New Roman", serif' },
+];
+
+/** A small uppercase section header used to group the panel. */
+const SectionLabel = ({ children }: { children: React.ReactNode }) => (
+  <h3 className="font-display text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-2">{children}</h3>
+);
+
 export const ElementPanel = () => {
-  const { projects, activeProjectId, activeSheetId, selectedElementId, activeFace, addElement, updateElement, removeElement, setSelectedElement } = useProjectStore();
+  const {
+    projects, activeProjectId, activeSheetId, selectedElementId, activeFace,
+    addElement, updateElement, removeElement, duplicateElement, reorderElement, setSelectedElement,
+  } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const template = activeFace === 'back' ? sheet?.backTemplate : sheet?.template;
@@ -21,30 +42,23 @@ export const ElementPanel = () => {
 
   if (!template || !activeProjectId) return null;
 
+  const setStyle = (patch: Partial<CardElement['style']>) => {
+    if (!selectedElement) return;
+    updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, ...patch } });
+  };
+
   const handleAddElement = (type: CardElement['type'], svgData?: string) => {
     const defaults: Record<string, { w: number; h: number }> = {
-      text: { w: 200, h: 32 },
-      icon: { w: 40, h: 40 },
-      hline: { w: 200, h: 2 },
-      vline: { w: 2, h: 100 },
-      svg: { w: 60, h: 60 },
-      image: { w: 80, h: 80 },
+      text: { w: 200, h: 32 }, icon: { w: 40, h: 40 }, hline: { w: 200, h: 2 },
+      vline: { w: 2, h: 100 }, svg: { w: 60, h: 60 }, image: { w: 80, h: 80 },
     };
     const d = defaults[type] ?? { w: 80, h: 80 };
     const tag = newTag.trim() || `{{${type}}}`;
     const element: CardElement = {
-      id: generateId(),
-      type,
-      tag,
-      x: 20,
-      y: 20 + template.elements.length * 40,
-      width: d.w,
-      height: d.h,
+      id: generateId(), type, tag, x: 20, y: 20 + template.elements.length * 40, width: d.w, height: d.h,
       style: {
-        fontSize: type === 'text' ? 14 : 24,
-        color: 'hsl(210 20% 92%)',
-        strokeWidth: (type === 'hline' || type === 'vline') ? 2 : undefined,
-        svgData,
+        fontSize: type === 'text' ? 14 : 24, color: 'hsl(210 20% 92%)',
+        strokeWidth: (type === 'hline' || type === 'vline') ? 2 : undefined, svgData,
       },
     };
     addElement(activeProjectId, element);
@@ -56,9 +70,7 @@ export const ElementPanel = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      handleAddElement('svg', reader.result as string);
-    };
+    reader.onload = () => handleAddElement('svg', reader.result as string);
     reader.readAsDataURL(file);
     e.target.value = '';
   };
@@ -67,67 +79,43 @@ export const ElementPanel = () => {
     const file = e.target.files?.[0];
     if (!file || !selectedElement) return;
     const reader = new FileReader();
-    reader.onload = () => {
-      updateElement(activeProjectId, selectedElement.id, {
-        style: { ...selectedElement.style, svgData: reader.result as string },
-      });
-    };
+    reader.onload = () => setStyle({ svgData: reader.result as string });
     reader.readAsDataURL(file);
     e.target.value = '';
   };
 
   const iconMap: Record<string, React.ReactNode> = {
-    text: <Type size={12} />,
-    icon: <Diamond size={12} />,
-    hline: <Minus size={12} />,
-    vline: <SeparatorVertical size={12} />,
-    svg: <FileImage size={12} />,
-    image: <FileImage size={12} />,
+    text: <Type size={12} />, icon: <Diamond size={12} />, hline: <Minus size={12} />,
+    vline: <SeparatorVertical size={12} />, svg: <FileImage size={12} />, image: <FileImage size={12} />,
   };
+
+  const num = (v: number | undefined, fallback: number) => (v === undefined ? fallback : v);
+  const isText = selectedElement?.type === 'text';
+  const isLine = selectedElement?.type === 'hline' || selectedElement?.type === 'vline';
 
   return (
     <div className="w-72 min-w-[18rem] shrink-0 h-full bg-card border-l border-border p-4 overflow-y-auto flex flex-col gap-5">
+      {/* Add */}
       <div>
-        <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Add Element
-        </h3>
-        <div className="flex gap-2 mb-2">
-          <Input
-            placeholder="Tag name e.g. {{name}}"
-            value={newTag}
-            onChange={(e) => setNewTag(e.target.value)}
-            className="text-xs h-8"
-          />
-        </div>
+        <SectionLabel>Add Element</SectionLabel>
+        <Input placeholder="Tag name e.g. {{name}}" value={newTag} onChange={(e) => setNewTag(e.target.value)} className="text-xs h-8 mb-2" />
         <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('text')}>
-            <Type size={12} /> Text
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('icon')}>
-            <Diamond size={12} /> Icon
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('hline')}>
-            <Minus size={12} /> H-Line
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('vline')}>
-            <SeparatorVertical size={12} /> V-Line
-          </Button>
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('text')}><Type size={12} /> Text</Button>
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('icon')}><Diamond size={12} /> Icon</Button>
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('hline')}><Minus size={12} /> H-Line</Button>
+          <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => handleAddElement('vline')}><SeparatorVertical size={12} /> V-Line</Button>
         </div>
         <input ref={svgRef} type="file" accept=".svg" className="hidden" onChange={handleSvgUpload} />
-        <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-2" onClick={() => svgRef.current?.click()}>
-          <FileImage size={12} /> Upload SVG
-        </Button>
-        <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-1" onClick={() => handleAddElement('image')}>
-          <ImageIcon size={12} /> Image URL
-        </Button>
+        <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-2" onClick={() => svgRef.current?.click()}><FileImage size={12} /> Upload SVG</Button>
+        <Button variant="outline" size="sm" className="w-full gap-1 text-xs mt-1" onClick={() => handleAddElement('image')}><ImageIcon size={12} /> Image</Button>
       </div>
 
+      {/* Layers list */}
       <div>
-        <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Elements ({template.elements.length})
-        </h3>
+        <SectionLabel>Elements ({template.elements.length})</SectionLabel>
         <div className="space-y-1">
-          {template.elements.map((el) => (
+          {/* topmost first */}
+          {[...template.elements].reverse().map((el) => (
             <div
               key={el.id}
               className={`flex items-center gap-2 px-2 py-1.5 rounded text-xs cursor-pointer transition-colors ${
@@ -138,12 +126,7 @@ export const ElementPanel = () => {
               {iconMap[el.type] ?? <Diamond size={12} />}
               <span className="flex-1 truncate font-display">{el.tag}</span>
               {el.visibleIfField && <Eye size={10} className="text-primary shrink-0" />}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 hover:text-destructive"
-                onClick={(e) => { e.stopPropagation(); removeElement(activeProjectId, el.id); }}
-              >
+              <Button variant="ghost" size="icon" className="h-5 w-5 hover:text-destructive" onClick={(e) => { e.stopPropagation(); removeElement(activeProjectId, el.id); }}>
                 <Trash2 size={10} />
               </Button>
             </div>
@@ -152,156 +135,168 @@ export const ElementPanel = () => {
       </div>
 
       {selectedElement && (
-        <div className="border-t border-border pt-4">
-          <h3 className="font-display text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-            Properties
-          </h3>
-          <div className="space-y-3">
+        <>
+          {/* Layer actions */}
+          <div className="border-t border-border pt-4">
+            <SectionLabel>Layer</SectionLabel>
+            <div className="flex gap-1">
+              <Button variant="outline" size="icon" className="h-8 w-8" title="Bring to front" onClick={() => reorderElement(activeProjectId, selectedElement.id, 'front')}><ChevronsUp size={14} /></Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" title="Forward" onClick={() => reorderElement(activeProjectId, selectedElement.id, 'forward')}><ChevronUp size={14} /></Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" title="Backward" onClick={() => reorderElement(activeProjectId, selectedElement.id, 'backward')}><ChevronDown size={14} /></Button>
+              <Button variant="outline" size="icon" className="h-8 w-8" title="Send to back" onClick={() => reorderElement(activeProjectId, selectedElement.id, 'back')}><ChevronsDown size={14} /></Button>
+              <div className="flex-1" />
+              <Button variant="outline" size="icon" className="h-8 w-8" title="Duplicate (⌘D)" onClick={() => duplicateElement(activeProjectId, selectedElement.id)}><Copy size={14} /></Button>
+              <Button variant="outline" size="icon" className="h-8 w-8 hover:text-destructive" title="Delete (Del)" onClick={() => removeElement(activeProjectId, selectedElement.id)}><Trash2 size={14} /></Button>
+            </div>
+          </div>
+
+          {/* Geometry */}
+          <div className="border-t border-border pt-4 space-y-3">
+            <SectionLabel>Position &amp; Size</SectionLabel>
             <div>
               <Label className="text-xs text-muted-foreground">Tag</Label>
-              <Input
-                value={selectedElement.tag}
-                onChange={(e) => updateElement(activeProjectId, selectedElement.id, { tag: e.target.value })}
-                className="text-xs h-8 mt-1"
-              />
+              <Input value={selectedElement.tag} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { tag: e.target.value })} className="text-xs h-8 mt-1" />
             </div>
             <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">X</Label>
-                <Input type="number" value={Math.round(selectedElement.x)} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { x: +e.target.value })} className="text-xs h-8 mt-1" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Y</Label>
-                <Input type="number" value={Math.round(selectedElement.y)} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { y: +e.target.value })} className="text-xs h-8 mt-1" />
-              </div>
+              <div><Label className="text-xs text-muted-foreground">X</Label><Input type="number" value={Math.round(selectedElement.x)} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { x: +e.target.value })} className="text-xs h-8 mt-1" /></div>
+              <div><Label className="text-xs text-muted-foreground">Y</Label><Input type="number" value={Math.round(selectedElement.y)} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { y: +e.target.value })} className="text-xs h-8 mt-1" /></div>
+              <div><Label className="text-xs text-muted-foreground">W</Label><Input type="number" value={selectedElement.width} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { width: +e.target.value })} className="text-xs h-8 mt-1" /></div>
+              <div><Label className="text-xs text-muted-foreground">H</Label><Input type="number" value={selectedElement.height} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { height: +e.target.value })} className="text-xs h-8 mt-1" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs text-muted-foreground">Width</Label>
-                <Input type="number" value={selectedElement.width} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { width: +e.target.value })} className="text-xs h-8 mt-1" />
-              </div>
-              <div>
-                <Label className="text-xs text-muted-foreground">Height</Label>
-                <Input type="number" value={selectedElement.height} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { height: +e.target.value })} className="text-xs h-8 mt-1" />
-              </div>
-            </div>
-
-            {(selectedElement.type === 'text' || selectedElement.type === 'icon') && (
-              <div>
-                <Label className="text-xs text-muted-foreground">Font Size</Label>
-                <Input type="number" value={selectedElement.style.fontSize || 14} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, fontSize: +e.target.value } })} className="text-xs h-8 mt-1" />
-              </div>
-            )}
-
-            {(selectedElement.type === 'hline' || selectedElement.type === 'vline') && (
-              <div>
-                <Label className="text-xs text-muted-foreground">Stroke Width</Label>
-                <Input type="number" value={selectedElement.style.strokeWidth || 2} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, strokeWidth: +e.target.value } })} className="text-xs h-8 mt-1" />
-              </div>
-            )}
-
             <div>
               <Label className="text-xs text-muted-foreground">Rotation (°)</Label>
-              <Input type="number" value={selectedElement.style.rotation || 0} onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, rotation: +e.target.value } })} className="text-xs h-8 mt-1" />
+              <Input type="number" value={selectedElement.style.rotation || 0} onChange={(e) => setStyle({ rotation: +e.target.value })} className="text-xs h-8 mt-1" />
             </div>
+          </div>
 
-            <div>
-              <Label className="text-xs text-muted-foreground">Color</Label>
-              <Input
-                type="color"
-                value={selectedElement.style.color || '#dee2e6'}
-                onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, color: e.target.value } })}
-                className="h-8 mt-1 p-1 cursor-pointer"
-              />
-            </div>
-
-            <div>
-              <Label className="text-xs text-muted-foreground">Visible If Field (non-empty)</Label>
-              <Select
-                value={selectedElement.visibleIfField || '__none__'}
-                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { visibleIfField: v === '__none__' ? '' : v })}
-              >
-                <SelectTrigger className="text-xs h-8 mt-1">
-                  <SelectValue placeholder="Always visible" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__" className="text-xs">Always visible</SelectItem>
-                  {columns.map((col) => (
-                    <SelectItem key={col} value={col} className="text-xs">{col}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {selectedElement.visibleIfField && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  Shown only when <code className="text-primary">{'{{' + selectedElement.visibleIfField + '}}'}</code> is not empty
-                </p>
+          {/* Typography */}
+          {(isText || selectedElement.type === 'icon') && (
+            <div className="border-t border-border pt-4 space-y-3">
+              <SectionLabel>Typography</SectionLabel>
+              <div>
+                <Label className="text-xs text-muted-foreground">Font Size</Label>
+                <Input type="number" value={num(selectedElement.style.fontSize, 14)} onChange={(e) => setStyle({ fontSize: +e.target.value })} className="text-xs h-8 mt-1" />
+              </div>
+              {isText && (
+                <>
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Font</Label>
+                    <Select value={selectedElement.style.fontFamily || ''} onValueChange={(v) => setStyle({ fontFamily: v })}>
+                      <SelectTrigger className="text-xs h-8 mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {FONT_FAMILIES.map((f) => <SelectItem key={f.label} value={f.value} className="text-xs">{f.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="flex gap-1">
+                    {([['left', AlignLeft], ['center', AlignCenter], ['right', AlignRight]] as const).map(([a, Icon]) => (
+                      <Button key={a} variant={(selectedElement.style.textAlign || 'left') === a ? 'default' : 'outline'} size="icon" className="h-8 w-8" onClick={() => setStyle({ textAlign: a })}><Icon size={14} /></Button>
+                    ))}
+                    <div className="flex-1" />
+                    <Button variant={selectedElement.style.fontWeight === 'bold' ? 'default' : 'outline'} size="icon" className="h-8 w-8" onClick={() => setStyle({ fontWeight: selectedElement.style.fontWeight === 'bold' ? 'normal' : 'bold' })}><Bold size={14} /></Button>
+                    <Button variant={selectedElement.style.fontStyle === 'italic' ? 'default' : 'outline'} size="icon" className="h-8 w-8" onClick={() => setStyle({ fontStyle: selectedElement.style.fontStyle === 'italic' ? 'normal' : 'italic' })}><Italic size={14} /></Button>
+                  </div>
+                </>
               )}
             </div>
+          )}
 
+          {isLine && (
+            <div className="border-t border-border pt-4">
+              <Label className="text-xs text-muted-foreground">Stroke Width</Label>
+              <Input type="number" value={num(selectedElement.style.strokeWidth, 2)} onChange={(e) => setStyle({ strokeWidth: +e.target.value })} className="text-xs h-8 mt-1" />
+            </div>
+          )}
+
+          {/* Appearance */}
+          <div className="border-t border-border pt-4 space-y-3">
+            <SectionLabel>Appearance</SectionLabel>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs text-muted-foreground">{isLine ? 'Line color' : 'Color'}</Label>
+                <Input type="color" value={selectedElement.style.color || '#dee2e6'} onChange={(e) => setStyle({ color: e.target.value })} className="h-8 mt-1 p-1 cursor-pointer" />
+              </div>
+              {!isLine && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Fill</Label>
+                  <Input type="color" value={selectedElement.style.backgroundColor || '#000000'} onChange={(e) => setStyle({ backgroundColor: e.target.value })} className="h-8 mt-1 p-1 cursor-pointer" />
+                </div>
+              )}
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Opacity ({Math.round(num(selectedElement.style.opacity, 1) * 100)}%)</Label>
+              <input type="range" min={0} max={1} step={0.05} value={num(selectedElement.style.opacity, 1)} onChange={(e) => setStyle({ opacity: +e.target.value })} className="w-full mt-2 accent-primary" />
+            </div>
+            {!isLine && (
+              <>
+                <div className="grid grid-cols-2 gap-2">
+                  <div><Label className="text-xs text-muted-foreground">Border W</Label><Input type="number" min={0} value={num(selectedElement.style.borderWidth, 0)} onChange={(e) => setStyle({ borderWidth: +e.target.value })} className="text-xs h-8 mt-1" /></div>
+                  <div><Label className="text-xs text-muted-foreground">Border color</Label><Input type="color" value={selectedElement.style.borderColor || '#000000'} onChange={(e) => setStyle({ borderColor: e.target.value })} className="h-8 mt-1 p-1 cursor-pointer" /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 items-end">
+                  <div><Label className="text-xs text-muted-foreground">Radius</Label><Input type="number" min={0} value={num(selectedElement.style.borderRadius, 0)} onChange={(e) => setStyle({ borderRadius: +e.target.value })} className="text-xs h-8 mt-1" /></div>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground h-8 cursor-pointer">
+                    <input type="checkbox" checked={!!selectedElement.style.shadow} onChange={(e) => setStyle({ shadow: e.target.checked })} className="accent-primary" /> Shadow
+                  </label>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Data binding */}
+          <div className="border-t border-border pt-4 space-y-3">
+            <SectionLabel>Data</SectionLabel>
+            <div>
+              <Label className="text-xs text-muted-foreground">Visible if field (non-empty)</Label>
+              <Select value={selectedElement.visibleIfField || '__none__'} onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { visibleIfField: v === '__none__' ? '' : v })}>
+                <SelectTrigger className="text-xs h-8 mt-1"><SelectValue placeholder="Always visible" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__" className="text-xs">Always visible</SelectItem>
+                  {columns.map((col) => <SelectItem key={col} value={col} className="text-xs">{col}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
             {selectedElement.type === 'svg' && (
               <div>
                 <Label className="text-xs text-muted-foreground">Replace SVG</Label>
                 <input type="file" accept=".svg" className="text-xs mt-1 file:text-xs file:mr-2 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-muted-foreground" onChange={handleReplaceSvg} />
               </div>
             )}
-
             {selectedElement.type === 'image' && (
               <div>
                 <Label className="text-xs text-muted-foreground">Image URL</Label>
-                <Input
-                  placeholder="https://example.com/image.png"
-                  value={selectedElement.style.imageUrl || ''}
-                  onChange={(e) => updateElement(activeProjectId, selectedElement.id, { style: { ...selectedElement.style, imageUrl: e.target.value } })}
-                  className="text-xs h-8 mt-1"
-                />
+                <Input placeholder="https://example.com/image.png" value={selectedElement.style.imageUrl || ''} onChange={(e) => setStyle({ imageUrl: e.target.value })} className="text-xs h-8 mt-1" />
               </div>
             )}
+          </div>
 
-            {/* TCG Schema Type */}
+          {/* TCG annotations */}
+          <div className="border-t border-border pt-4 space-y-3">
+            <SectionLabel>TCG Schema</SectionLabel>
             <div>
-              <Label className="text-xs text-muted-foreground">TCG Schema Type</Label>
-              <Select
-                value={selectedElement.tcgType || '__none__'}
-                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgType: (v === '__none__' ? '' : v) as any })}
-              >
-                <SelectTrigger className="text-xs h-8 mt-1">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
+              <Label className="text-xs text-muted-foreground">Type</Label>
+              <Select value={selectedElement.tcgType || '__none__'} onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgType: (v === '__none__' ? '' : v) as any })}>
+                <SelectTrigger className="text-xs h-8 mt-1"><SelectValue placeholder="None" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="__none__" className="text-xs">None</SelectItem>
-                  {TCG_SCHEMA_CLASSES.map((cls) => (
-                    <SelectItem key={cls.uri} value={cls.uri} className="text-xs">
-                      {cls.label}
-                    </SelectItem>
+                  {TCG_SCHEMA_CLASSES.map((cls) => <SelectItem key={cls.uri} value={cls.uri} className="text-xs">{cls.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Property</Label>
+              <Select value={selectedElement.tcgProperty || '__none__'} onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgProperty: (v === '__none__' ? '' : v) as any })}>
+                <SelectTrigger className="text-xs h-8 mt-1"><SelectValue placeholder="None" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__" className="text-xs">None</SelectItem>
+                  {TCG_SCHEMA_PROPERTIES.filter((p) => !selectedElement.tcgType || p.domain === '__any__' || p.domain === selectedElement.tcgType).map((prop) => (
+                    <SelectItem key={prop.uri} value={prop.uri} className="text-xs">{prop.label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            {/* TCG Schema Property */}
-            <div>
-              <Label className="text-xs text-muted-foreground">TCG Property</Label>
-              <Select
-                value={selectedElement.tcgProperty || '__none__'}
-                onValueChange={(v) => updateElement(activeProjectId, selectedElement.id, { tcgProperty: (v === '__none__' ? '' : v) as any })}
-              >
-                <SelectTrigger className="text-xs h-8 mt-1">
-                  <SelectValue placeholder="None" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__" className="text-xs">None</SelectItem>
-                  {TCG_SCHEMA_PROPERTIES
-                    .filter((p) => !selectedElement.tcgType || p.domain === '__any__' || p.domain === selectedElement.tcgType)
-                    .map((prop) => (
-                      <SelectItem key={prop.uri} value={prop.uri} className="text-xs">
-                        {prop.label}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

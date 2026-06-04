@@ -13,32 +13,49 @@ export const resolveTag = (tag: string, row: CardRow): string => {
   return m ? row[m[1].trim()] ?? tag : tag;
 };
 
+/** Shared decoration (fill, opacity, border, radius, shadow) for any element box. */
+const boxCss = (s: CardElement['style']): string =>
+  (s.opacity != null && s.opacity !== 1 ? `opacity:${s.opacity};` : '') +
+  (s.backgroundColor ? `background-color:${s.backgroundColor};` : '') +
+  (s.borderRadius ? `border-radius:${s.borderRadius}px;` : '') +
+  (s.borderWidth ? `border:${s.borderWidth}px solid ${s.borderColor || '#000'};` : '') +
+  (s.shadow ? 'box-shadow:0 2px 6px rgba(0,0,0,0.45);' : '');
+
 const elementHtml = (el: CardElement, row: CardRow): string => {
   if (el.visibleIfField) {
     const v = row[el.visibleIfField];
     if (!v || v.trim() === '') return '';
   }
 
+  const s = el.style;
   const tagMatch = el.tag.match(/^\{\{(.+)\}\}$/);
   const value = tagMatch ? row[tagMatch[1].trim()] ?? el.tag : el.tag;
-  const rotation = el.style.rotation ? `transform:rotate(${el.style.rotation}deg);` : '';
+  const rotation = s.rotation ? `transform:rotate(${s.rotation}deg);` : '';
   const pos = `position:absolute;left:${el.x}px;top:${el.y}px;width:${el.width}px;height:${el.height}px;`;
+  const box = boxCss(s);
 
   if (el.type === 'image') {
-    const src = tagMatch ? value : el.style.imageUrl || '';
-    return `<img src="${src}" style="${pos}object-fit:cover;${rotation}" />`;
+    const src = tagMatch ? value : s.imageUrl || '';
+    return `<img src="${src}" style="${pos}object-fit:cover;${box}${rotation}" />`;
   }
   if (el.type === 'hline') {
-    return `<div style="${pos}height:0;border-top:${el.style.strokeWidth || 2}px solid ${el.style.color || '#fff'};${rotation}"></div>`;
+    return `<div style="${pos}height:0;border-top:${s.strokeWidth || 2}px solid ${s.color || '#fff'};${rotation}"></div>`;
   }
   if (el.type === 'vline') {
-    return `<div style="${pos}width:0;border-left:${el.style.strokeWidth || 2}px solid ${el.style.color || '#fff'};${rotation}"></div>`;
+    return `<div style="${pos}width:0;border-left:${s.strokeWidth || 2}px solid ${s.color || '#fff'};${rotation}"></div>`;
   }
   if (el.type === 'svg') {
-    return `<div style="${pos}${rotation}">${el.style.svgData || ''}</div>`;
+    return `<div style="${pos}${box}${rotation}">${s.svgData ? `<img src="${s.svgData}" style="width:100%;height:100%;object-fit:contain;" />` : ''}</div>`;
   }
   // text / icon
-  return `<div style="${pos}font-size:${el.style.fontSize || 14}px;font-weight:${el.style.fontWeight || 'normal'};color:${el.style.color || '#fff'};overflow:hidden;${rotation}">${value}</div>`;
+  const align = s.textAlign || 'left';
+  const justify = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
+  return (
+    `<div style="${pos}display:flex;align-items:center;justify-content:${justify};` +
+    `font-size:${s.fontSize || 14}px;font-weight:${s.fontWeight || 'normal'};font-style:${s.fontStyle || 'normal'};` +
+    (s.fontFamily ? `font-family:${s.fontFamily};` : '') +
+    `text-align:${align};color:${s.color || '#fff'};overflow:hidden;${box}${rotation}">${value}</div>`
+  );
 };
 
 /** Inline markup for one card (used for grids/PDF — no <html> wrapper). */

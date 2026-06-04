@@ -33,6 +33,8 @@ interface ProjectStore {
   addElement: (projectId: string, element: CardElement) => void;
   updateElement: (projectId: string, elementId: string, updates: Partial<CardElement>) => void;
   removeElement: (projectId: string, elementId: string) => void;
+  duplicateElement: (projectId: string, elementId: string) => void;
+  reorderElement: (projectId: string, elementId: string, dir: 'front' | 'back' | 'forward' | 'backward') => void;
   updateTemplateBackground: (projectId: string, bg: string) => void;
 
   // Row operations (scoped to active sheet)
@@ -262,6 +264,39 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         }))
       ),
       selectedElementId: s.selectedElementId === elementId ? null : s.selectedElementId,
+    })),
+
+  duplicateElement: (projectId, elementId) => {
+    const newId = generateId();
+    set((s) => ({
+      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
+        mapFaceTemplate(sh, s.activeFace, (t) => {
+          const src = t.elements.find((el) => el.id === elementId);
+          if (!src) return t;
+          const copy: CardElement = { ...src, id: newId, x: src.x + 12, y: src.y + 12, style: { ...src.style } };
+          return { ...t, elements: [...t.elements, copy] };
+        })
+      ),
+      selectedElementId: newId,
+    }));
+  },
+
+  reorderElement: (projectId, elementId, dir) =>
+    set((s) => ({
+      projects: mapActiveSheet(s.projects, projectId, s.activeSheetId, (sh) =>
+        mapFaceTemplate(sh, s.activeFace, (t) => {
+          const els = [...t.elements];
+          const i = els.findIndex((el) => el.id === elementId);
+          if (i < 0) return t;
+          const [el] = els.splice(i, 1);
+          // Render order = array order (later draws on top).
+          if (dir === 'front') els.push(el);
+          else if (dir === 'back') els.unshift(el);
+          else if (dir === 'forward') els.splice(Math.min(i + 1, els.length), 0, el);
+          else els.splice(Math.max(i - 1, 0), 0, el);
+          return { ...t, elements: els };
+        })
+      ),
     })),
 
   updateTemplateBackground: (projectId, bg) =>
