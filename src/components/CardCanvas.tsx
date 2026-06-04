@@ -86,7 +86,12 @@ interface Gesture {
   origY: number;
   origW: number;
   origH: number;
+  /** Becomes true once the pointer travels past DRAG_THRESHOLD, so a plain
+   *  click selects without moving/snapping the element. */
+  activated?: boolean;
 }
+
+const DRAG_THRESHOLD = 3; // screen px
 
 /** Snap one axis: align an element's left/center/right (or top/mid/bottom) to targets. */
 const snapAxis = (pos: number, size: number, targets: number[]): { pos: number; guide: number | null } => {
@@ -178,6 +183,11 @@ export const CardCanvas = () => {
     const onMove = (e: PointerEvent) => {
       const g = gestureRef.current;
       if (!g || !activeProjectId || !template || !selected) return;
+      // Ignore sub-threshold movement so a click selects without nudging/snapping.
+      if (!g.activated) {
+        if (Math.abs(e.clientX - g.startClientX) < DRAG_THRESHOLD && Math.abs(e.clientY - g.startClientY) < DRAG_THRESHOLD) return;
+        g.activated = true;
+      }
       const dx = (e.clientX - g.startClientX) / zoom;
       const dy = (e.clientY - g.startClientY) / zoom;
 
