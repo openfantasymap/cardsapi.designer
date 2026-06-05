@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useProjectStore } from '@/store/useProjectStore';
 import { renderElement } from '@/components/CardCanvas';
+import { loadGoogleFonts } from '@/lib/fonts';
 import { CardTemplate, CardRow, CardElement, TCG_SCHEMA_PROPERTIES } from '@/types/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, RotateCcw } from 'lucide-react';
@@ -181,6 +182,16 @@ export const PublicCardSet = () => {
   const { slug } = useParams<{ slug: string }>();
   const project = useProjectStore((s) => s.projects.find((p) => p.slug === slug));
   const [search, setSearch] = useState('');
+
+  // Load any Google Fonts used by the project so the gallery renders correctly.
+  useEffect(() => {
+    if (!project) return;
+    const fams = project.sheets.flatMap((sh) => [
+      ...sh.template.elements.map((el) => el.style.fontFamily),
+      ...(sh.backTemplate?.elements ?? []).map((el) => el.style.fontFamily),
+    ]);
+    loadGoogleFonts(fams);
+  }, [project]);
 
   if (!project) {
     return (

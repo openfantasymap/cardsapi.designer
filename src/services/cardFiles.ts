@@ -6,6 +6,7 @@
  */
 
 import { CardProject, CardTemplate, CardElement, CardRow } from '@/types/card';
+import { cssFontFamily, googleFontsHref } from '@/lib/fonts';
 
 /** Resolve a `{{field}}` tag against a row; non-tag strings pass through. */
 export const resolveTag = (tag: string, row: CardRow): string => {
@@ -53,7 +54,7 @@ const elementHtml = (el: CardElement, row: CardRow): string => {
   return (
     `<div style="${pos}display:flex;align-items:center;justify-content:${justify};` +
     `font-size:${s.fontSize || 14}px;font-weight:${s.fontWeight || 'normal'};font-style:${s.fontStyle || 'normal'};` +
-    (s.fontFamily ? `font-family:${s.fontFamily};` : '') +
+    (s.fontFamily ? `font-family:${cssFontFamily(s.fontFamily)};` : '') +
     `text-align:${align};color:${s.color || '#fff'};overflow:hidden;${box}${rotation}">${value}</div>`
   );
 };
@@ -68,12 +69,15 @@ export const cardInnerHtml = (template: CardTemplate, row: CardRow): string => {
 };
 
 /** A full standalone HTML document for a single card. */
-export const buildCardHtml = (template: CardTemplate, row: CardRow): string =>
-  `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111;}</style></head>
+export const buildCardHtml = (template: CardTemplate, row: CardRow): string => {
+  const href = googleFontsHref(template.elements.map((el) => el.style.fontFamily));
+  const fontLink = href ? `<link rel="stylesheet" href="${href}">` : '';
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8">${fontLink}<style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111;}</style></head>
 <body>
   ${cardInnerHtml(template, row)}
 </body></html>`;
+};
 
 /** Convert spreadsheet rows to a CSV string. */
 export const buildCsv = (rows: CardRow[]): string => {

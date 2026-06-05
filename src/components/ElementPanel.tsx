@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { FontPicker } from '@/components/FontPicker';
 import {
   Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon, Eye,
   Copy, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
@@ -12,15 +13,6 @@ import {
 } from 'lucide-react';
 
 const generateId = () => Math.random().toString(36).slice(2, 10);
-
-const FONT_FAMILIES: { label: string; value: string }[] = [
-  { label: 'Default', value: '' },
-  { label: 'Sans', value: 'system-ui, sans-serif' },
-  { label: 'Serif', value: 'Georgia, serif' },
-  { label: 'Mono', value: 'ui-monospace, monospace' },
-  { label: 'Impact', value: 'Impact, sans-serif' },
-  { label: 'Times', value: '"Times New Roman", serif' },
-];
 
 /** A small uppercase section header used to group the panel. */
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
@@ -189,12 +181,9 @@ export const ElementPanel = () => {
                 <>
                   <div>
                     <Label className="text-xs text-muted-foreground">Font</Label>
-                    <Select value={selectedElement.style.fontFamily || '__default__'} onValueChange={(v) => setStyle({ fontFamily: v === '__default__' ? '' : v })}>
-                      <SelectTrigger className="text-xs h-8 mt-1"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {FONT_FAMILIES.map((f) => <SelectItem key={f.label} value={f.value || '__default__'} className="text-xs">{f.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <div className="mt-1">
+                      <FontPicker value={selectedElement.style.fontFamily} onChange={(f) => setStyle({ fontFamily: f })} />
+                    </div>
                   </div>
                   <div className="flex gap-1">
                     {([['left', AlignLeft], ['center', AlignCenter], ['right', AlignRight]] as const).map(([a, Icon]) => (

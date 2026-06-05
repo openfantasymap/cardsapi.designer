@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { CardElement } from '@/types/card';
+import { cssFontFamily, loadGoogleFonts } from '@/lib/fonts';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 
 const renderElement = (el: CardElement, value?: string) => {
@@ -24,7 +25,7 @@ const renderElement = (el: CardElement, value?: string) => {
             fontSize: s.fontSize || 14,
             fontWeight: s.fontWeight || 'normal',
             fontStyle: s.fontStyle || 'normal',
-            fontFamily: s.fontFamily || undefined,
+            fontFamily: cssFontFamily(s.fontFamily) || undefined,
             textAlign: s.textAlign || 'left',
             justifyContent: s.textAlign === 'center' ? 'center' : s.textAlign === 'right' ? 'flex-end' : 'flex-start',
             color: s.color || 'hsl(210 20% 92%)',
@@ -134,6 +135,11 @@ export const CardCanvas = () => {
     fit();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template?.id, template?.width, template?.height]);
+
+  // Load any Google Fonts used by the current template so they render here.
+  useEffect(() => {
+    if (template) loadGoogleFonts(template.elements.map((el) => el.style.fontFamily));
+  }, [template]);
 
   // ── keyboard ─────────────────────────────────────────────────────────────
   useEffect(() => {

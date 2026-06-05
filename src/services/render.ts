@@ -14,6 +14,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { CardProject, CardTemplate, CardRow } from '@/types/card';
 import { cardInnerHtml } from '@/services/cardFiles';
+import { loadGoogleFonts } from '@/lib/fonts';
 
 interface Face {
   label: string;
@@ -38,13 +39,19 @@ const collectFaces = (project: CardProject): Face[] => {
 
 /** Rasterise one face to a PNG data URL via an offscreen node. */
 const renderFaceToPng = async (face: Face): Promise<string> => {
+  const families = face.template.elements.map((el) => el.style.fontFamily).filter((f): f is string => !!f);
+  loadGoogleFonts(families);
+
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-99999px;top:0;pointer-events:none;';
   host.innerHTML = cardInnerHtml(face.template, face.row);
   const node = host.firstElementChild as HTMLElement;
   document.body.appendChild(host);
   try {
-    if (document.fonts?.ready) await document.fonts.ready;
+    if (document.fonts) {
+      await Promise.all(families.map((f) => document.fonts.load(`16px '${f}'`).catch(() => undefined)));
+      await document.fonts.ready;
+    }
     return await toPng(node, {
       pixelRatio: 2,
       cacheBust: true,
