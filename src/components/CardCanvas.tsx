@@ -2,6 +2,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { CardElement } from '@/types/card';
 import { cssFontFamily, loadGoogleFonts } from '@/lib/fonts';
+import { loadStylesheets, templateHasIcons, iconCssUrls } from '@/lib/icons';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 
 const renderElement = (el: CardElement, value?: string) => {
@@ -34,12 +35,16 @@ const renderElement = (el: CardElement, value?: string) => {
           {display}
         </div>
       );
-    case 'icon':
+    case 'icon': {
+      // The class comes from the resolved value (bind the tag to a column for
+      // per-card icons). Falls back to a marker when the class is unresolved.
+      const cls = display && !/\{\{.+\}\}/.test(display) ? display : '';
       return (
         <div className="w-full h-full flex items-center justify-center" style={{ ...box, fontSize: s.fontSize || 24, color: s.color || 'hsl(var(--primary))' }}>
-          ◆
+          {cls ? <i className={cls} /> : <span className="opacity-40 text-xs">◆</span>}
         </div>
       );
+    }
     case 'hline':
       return (
         <div className="w-full h-full flex items-center" style={box}>
@@ -136,10 +141,12 @@ export const CardCanvas = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [template?.id, template?.width, template?.height]);
 
-  // Load any Google Fonts used by the current template so they render here.
+  // Load any Google Fonts + icon libraries used by the current template.
   useEffect(() => {
-    if (template) loadGoogleFonts(template.elements.map((el) => el.style.fontFamily));
-  }, [template]);
+    if (!template) return;
+    loadGoogleFonts(template.elements.map((el) => el.style.fontFamily));
+    if (templateHasIcons(template)) loadStylesheets(iconCssUrls(project?.iconStylesheets));
+  }, [template, project?.iconStylesheets]);
 
   // ── keyboard ─────────────────────────────────────────────────────────────
   useEffect(() => {

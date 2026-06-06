@@ -7,6 +7,7 @@
 
 import { CardProject, CardTemplate, CardElement, CardRow } from '@/types/card';
 import { cssFontFamily, googleFontsHref } from '@/lib/fonts';
+import { templateHasIcons, iconCssUrls, iconCssLinks } from '@/lib/icons';
 
 /** Resolve a `{{field}}` tag against a row; non-tag strings pass through. */
 export const resolveTag = (tag: string, row: CardRow): string => {
@@ -48,7 +49,12 @@ const elementHtml = (el: CardElement, row: CardRow): string => {
   if (el.type === 'svg') {
     return `<div style="${pos}${box}${rotation}">${s.svgData ? `<img src="${s.svgData}" style="width:100%;height:100%;object-fit:contain;" />` : ''}</div>`;
   }
-  // text / icon
+  if (el.type === 'icon') {
+    // Class from the resolved value (bind the tag to a column for per-card icons).
+    const cls = /\{\{.+\}\}/.test(value) ? '' : value;
+    return `<i class="${cls}" style="${pos}display:flex;align-items:center;justify-content:center;font-size:${s.fontSize || 24}px;color:${s.color || '#fff'};${box}${rotation}"></i>`;
+  }
+  // text
   const align = s.textAlign || 'left';
   const justify = align === 'center' ? 'center' : align === 'right' ? 'flex-end' : 'flex-start';
   return (
@@ -69,11 +75,12 @@ export const cardInnerHtml = (template: CardTemplate, row: CardRow): string => {
 };
 
 /** A full standalone HTML document for a single card. */
-export const buildCardHtml = (template: CardTemplate, row: CardRow): string => {
+export const buildCardHtml = (template: CardTemplate, row: CardRow, extraIconCss: string[] = []): string => {
   const href = googleFontsHref(template.elements.map((el) => el.style.fontFamily));
   const fontLink = href ? `<link rel="stylesheet" href="${href}">` : '';
+  const iconLinks = templateHasIcons(template) ? iconCssLinks(iconCssUrls(extraIconCss)) : '';
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8">${fontLink}<style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111;}</style></head>
+<html><head><meta charset="utf-8">${fontLink}${iconLinks}<style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111;}</style></head>
 <body>
   ${cardInnerHtml(template, row)}
 </body></html>`;
@@ -141,7 +148,7 @@ export const buildProjectTextFiles = (project: CardProject): Array<{ path: strin
     if (sheet.rows.length > 0) files.push({ path: `${folder}/data.csv`, text: buildCsv(sheet.rows) });
     files.push({ path: `${folder}/data.json`, text: JSON.stringify(sheet.rows, null, 2) });
     sheet.rows.forEach((row, i) => {
-      files.push({ path: `${folder}/card_${i + 1}.html`, text: buildCardHtml(sheet.template, row) });
+      files.push({ path: `${folder}/card_${i + 1}.html`, text: buildCardHtml(sheet.template, row, project.iconStylesheets ?? []) });
     });
   }
 

@@ -22,13 +22,14 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 export const ElementPanel = () => {
   const {
     projects, activeProjectId, activeSheetId, selectedElementId, activeFace, editingProjectBack,
-    addElement, updateElement, removeElement, duplicateElement, reorderElement, setSelectedElement,
+    addElement, updateElement, removeElement, duplicateElement, reorderElement, setSelectedElement, setIconStylesheets,
   } = useProjectStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const template = editingProjectBack ? project?.back : activeFace === 'back' ? sheet?.backTemplate : sheet?.template;
   const selectedElement = template?.elements.find((el) => el.id === selectedElementId);
   const [newTag, setNewTag] = useState('');
+  const [iconUrl, setIconUrl] = useState('');
   const svgRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLInputElement>(null);
   const replaceImgRef = useRef<HTMLInputElement>(null);
@@ -239,6 +240,37 @@ export const ElementPanel = () => {
               </>
             )}
           </div>
+
+          {/* Icon (icon-font glyph, optionally per-card via a bound column) */}
+          {selectedElement.type === 'icon' && (
+            <div className="border-t border-border pt-4 space-y-2">
+              <SectionLabel>Icon</SectionLabel>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Set the <strong>tag</strong> to an icon class — e.g. <code className="text-primary">ra ra-fire</code> or{' '}
+                <code className="text-primary">fa-solid fa-dragon</code> — or bind a column like{' '}
+                <code className="text-primary">{'{{icon}}'}</code> whose values are icon classes (per-card icons).
+              </p>
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                Built in: <strong>Font Awesome</strong> + <strong>RPG-Awesome</strong>. Add more icon-font CSS:
+              </p>
+              {(project?.iconStylesheets ?? []).map((url, i) => (
+                <div key={url} className="flex items-center gap-1">
+                  <code className="flex-1 truncate text-[11px] text-muted-foreground" title={url}>{url}</code>
+                  <Button variant="ghost" size="icon" className="h-6 w-6 hover:text-destructive shrink-0"
+                    onClick={() => setIconStylesheets(activeProjectId, (project?.iconStylesheets ?? []).filter((_, j) => j !== i))}>
+                    <X size={12} />
+                  </Button>
+                </div>
+              ))}
+              <div className="flex gap-1">
+                <Input value={iconUrl} onChange={(e) => setIconUrl(e.target.value)} placeholder="https://…/icons.css" className="text-xs h-8" />
+                <Button variant="outline" size="sm" className="text-xs h-8 shrink-0" onClick={() => {
+                  const u = iconUrl.trim();
+                  if (u) { setIconStylesheets(activeProjectId, [...(project?.iconStylesheets ?? []), u]); setIconUrl(''); }
+                }}>Add</Button>
+              </div>
+            </div>
+          )}
 
           {/* Data binding */}
           <div className="border-t border-border pt-4 space-y-3">

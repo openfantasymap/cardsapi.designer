@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useProjectStore } from '@/store/useProjectStore';
 import { renderElement } from '@/components/CardCanvas';
 import { loadGoogleFonts } from '@/lib/fonts';
+import { loadStylesheets, templateHasIcons, iconCssUrls } from '@/lib/icons';
 import { CardTemplate, CardRow, CardElement, TCG_SCHEMA_PROPERTIES } from '@/types/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, RotateCcw } from 'lucide-react';
@@ -191,6 +192,8 @@ export const PublicCardSet = () => {
       ...(sh.backTemplate?.elements ?? []).map((el) => el.style.fontFamily),
     ]);
     loadGoogleFonts(fams);
+    const usesIcons = project.sheets.some((sh) => templateHasIcons(sh.template) || templateHasIcons(sh.backTemplate));
+    if (usesIcons) loadStylesheets(iconCssUrls(project.iconStylesheets));
   }, [project]);
 
   if (!project) {

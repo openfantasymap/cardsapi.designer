@@ -15,6 +15,7 @@ import { saveAs } from 'file-saver';
 import { CardProject, CardTemplate, CardRow } from '@/types/card';
 import { cardInnerHtml } from '@/services/cardFiles';
 import { loadGoogleFonts } from '@/lib/fonts';
+import { loadStylesheets, templateHasIcons, iconCssUrls } from '@/lib/icons';
 
 interface Face {
   label: string;
@@ -69,6 +70,7 @@ const safeName = (s: string) => s.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._-]/
 export const exportProjectImages = async (project: CardProject) => {
   const faces = collectFaces(project);
   if (!faces.length) throw new Error('Nothing to render — add a card first.');
+  if (faces.some((f) => templateHasIcons(f.template))) loadStylesheets(iconCssUrls(project.iconStylesheets));
   const base = safeName(project.name) || 'cards';
 
   if (faces.length === 1) {
@@ -87,6 +89,7 @@ export const exportProjectImages = async (project: CardProject) => {
 export const exportProjectPdf = async (project: CardProject) => {
   const faces = collectFaces(project);
   if (!faces.length) throw new Error('Nothing to render — add a card first.');
+  if (faces.some((f) => templateHasIcons(f.template))) loadStylesheets(iconCssUrls(project.iconStylesheets));
 
   let pdf: jsPDF | null = null;
   for (const face of faces) {

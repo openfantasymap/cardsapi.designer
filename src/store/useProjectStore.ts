@@ -24,6 +24,7 @@ interface ProjectStore {
   exitProjectBack: () => void;
   togglePublic: (projectId: string) => void;
   updateSlug: (projectId: string, slug: string) => boolean;
+  setIconStylesheets: (projectId: string, urls: string[]) => void;
 
   // Sheet management
   addSheet: (projectId: string, name: string) => string;
@@ -208,6 +209,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     }));
     return true;
   },
+
+  setIconStylesheets: (projectId, urls) =>
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === projectId ? { ...p, iconStylesheets: urls } : p)),
+    })),
 
   // Sheet management
   addSheet: (projectId, name) => {

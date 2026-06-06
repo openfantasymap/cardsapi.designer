@@ -71,6 +71,11 @@ CardTemplate
 CardElement types: text | icon | image | hline | vline | svg
 ```
 
+`icon` elements render an icon-font glyph (`<i class="<value>">`) chosen by the
+element's value, so a bound `{{column}}` gives per-card icons. Font Awesome +
+RPG-Awesome are built in; more can be added via `CardProject.iconStylesheets`.
+See [docs/icons.md](docs/icons.md).
+
 Template tags use `{{fieldName}}` syntax to bind elements to spreadsheet columns. The `visibleIfField` property on elements hides them when the referenced column is empty.
 
 Elements can carry `tcgType` (schema class) and `tcgProperty` annotations from the TCG Schema vocabulary defined in `src/types/card.ts`.

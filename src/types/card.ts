@@ -112,6 +112,9 @@ export interface CardProject {
   /** Reusable global card back. Designed once at the project level; "Add Back"
    *  on a sheet seeds the sheet's back from this, after which they diverge. */
   back?: CardTemplate;
+  /** Extra icon-font stylesheet URLs (beyond the built-in Font Awesome +
+   *  RPG-Awesome) for `icon` elements. See docs/icons.md. */
+  iconStylesheets?: string[];
 }
 
 export const slugify = (name: string): string =>
