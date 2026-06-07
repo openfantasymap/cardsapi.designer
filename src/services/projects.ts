@@ -52,7 +52,11 @@ const projectReadme = (project: CardProject): string =>
   `_A [CardForge](https://card-creator.tcg-schema.org) project. ` +
   `Edit it in the app; this repo holds the source of truth (templates, data, images)._\n\n` +
   `- Sheets: ${project.sheets.length}\n` +
-  `- Cards: ${project.sheets.reduce((n, s) => n + s.rows.length, 0)}\n`;
+  `- Cards: ${project.sheets.reduce((n, s) => n + s.rows.length, 0)}\n\n` +
+  `## Explore the cards\n\n` +
+  `[\`index.html\`](index.html) is a self-contained gallery of every card. ` +
+  `Enable **GitHub Pages** for this repo (Settings → Pages → deploy from \`main\`) ` +
+  `to browse it online, or clone and open \`index.html\` locally.\n`;
 
 // ── Save / load a single project ─────────────────────────────────────────────
 
