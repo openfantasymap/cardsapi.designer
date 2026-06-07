@@ -16,6 +16,17 @@ export const BUILTIN_ICON_CSS: string[] = [
   'https://cdnjs.cloudflare.com/ajax/libs/rpg-awesome/0.2.0/css/rpg-awesome.min.css',
 ];
 
+/**
+ * Optional symbol/icon fonts a project (or template) can opt into via
+ * `CardProject.iconStylesheets`. Offered as one-click presets in the icon panel.
+ */
+export const ICON_LIBRARY_PRESETS: { label: string; url: string; sample: string }[] = [
+  { label: 'Mana (MTG mana/symbols)', url: 'https://cdn.jsdelivr.net/npm/mana-font@1.15.7/css/mana.css', sample: 'ms ms-g ms-cost' },
+  { label: 'Keyrune (MTG set symbols)', url: 'https://cdn.jsdelivr.net/npm/keyrune@latest/css/keyrune.css', sample: 'ss ss-mid' },
+];
+
+export const MANA_CSS = ICON_LIBRARY_PRESETS[0].url;
+
 const loaded = new Set<string>();
 
 /** Inject any not-yet-loaded icon stylesheets into the document. */

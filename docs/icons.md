@@ -28,6 +28,21 @@ setup needed:
 > Find class names in each library's gallery (linked above). RPG-Awesome always
 > needs the base `ra` class **plus** the icon class: `ra ra-fire`.
 
+### Symbol-font presets (one-click)
+
+The Icon panel also has one-click presets for popular **symbol fonts**:
+
+| Preset | Class syntax | Examples |
+|---|---|---|
+| [Mana](https://mana.andrewgioia.com/icons.html) — MTG mana/symbols | `ms ms-<sym>` (add `ms-cost` for the rounded pip) | `ms ms-g ms-cost`, `ms ms-2 ms-cost`, `ms ms-tap` |
+| [Keyrune](https://keyrune.andrewgioia.com/) — MTG set symbols | `ss ss-<set>` | `ss ss-mid`, `ss ss-war` |
+
+These load only for projects that opt in. The **Magic-style** template ships with
+Mana enabled and an icon-based mana-cost field, so a `cost` column of Mana
+classes renders as real pips. Any project can add them from the Icon panel, and
+**templates carry their font set** — saving a project as a template preserves its
+custom symbol fonts.
+
 ## Add a single (static) icon
 
 1. In the **Add Element** palette, click **Icon**.

@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FontPicker } from '@/components/FontPicker';
+import { ICON_LIBRARY_PRESETS } from '@/lib/icons';
 import {
   Type, Diamond, Trash2, Minus, SeparatorVertical, FileImage, Image as ImageIcon, Eye,
   Copy, Bold, Italic, AlignLeft, AlignCenter, AlignRight,
@@ -251,8 +252,29 @@ export const ElementPanel = () => {
                 <code className="text-primary">{'{{icon}}'}</code> whose values are icon classes (per-card icons).
               </p>
               <p className="text-[11px] text-muted-foreground leading-snug">
-                Built in: <strong>Font Awesome</strong> + <strong>RPG-Awesome</strong>. Add more icon-font CSS:
+                Built in: <strong>Font Awesome</strong> + <strong>RPG-Awesome</strong>. Add symbol fonts:
               </p>
+              <div className="flex flex-wrap gap-1">
+                {ICON_LIBRARY_PRESETS.map((lib) => {
+                  const on = (project?.iconStylesheets ?? []).includes(lib.url);
+                  return (
+                    <Button
+                      key={lib.url}
+                      variant={on ? 'default' : 'outline'}
+                      size="sm"
+                      className="text-[11px] h-7"
+                      title={`${lib.label} — e.g. "${lib.sample}"`}
+                      onClick={() => {
+                        const cur = project?.iconStylesheets ?? [];
+                        setIconStylesheets(activeProjectId, on ? cur.filter((u) => u !== lib.url) : [...cur, lib.url]);
+                      }}
+                    >
+                      {lib.label.split(' ')[0]}
+                    </Button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-snug">Or paste any icon-font CSS URL:</p>
               {(project?.iconStylesheets ?? []).map((url, i) => (
                 <div key={url} className="flex items-center gap-1">
                   <code className="flex-1 truncate text-[11px] text-muted-foreground" title={url}>{url}</code>

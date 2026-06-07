@@ -8,6 +8,7 @@
  * `{{columns}}`) plus a sample row so the preview shows something immediately.
  */
 import { CardTemplate, CardElement, CardRow } from '@/types/card';
+import { MANA_CSS } from '@/lib/icons';
 
 const W = 375;
 const H = 525; // 2.5" × 3.5" @ 150dpi
@@ -37,7 +38,7 @@ export interface CardPreset {
   id: string;
   label: string;
   description: string;
-  build: () => { template: CardTemplate; rows: CardRow[] };
+  build: () => { template: CardTemplate; rows: CardRow[]; iconStylesheets?: string[] };
 }
 
 // ── Blank ────────────────────────────────────────────────────────────────────
@@ -57,11 +58,12 @@ const blank: CardPreset = {
 const magic: CardPreset = {
   id: 'magic',
   label: 'Magic-style',
-  description: 'Name + mana cost, art window, type line, rules box, power/toughness.',
+  description: 'Name, mana symbols (Mana font), art, type line, rules box, P/T.',
   build: () => ({
     template: template('Magic-style', '#d9c9a3', [
-      el('text', '{{name}}', 18, 14, 250, 28, { fontSize: 20, fontWeight: 'bold', color: '#15110a' }),
-      el('text', '{{cost}}', 280, 14, 80, 28, { fontSize: 20, fontWeight: 'bold', color: '#15110a', textAlign: 'right' }),
+      el('text', '{{name}}', 18, 14, 230, 28, { fontSize: 20, fontWeight: 'bold', color: '#15110a' }),
+      // Mana cost as a symbol via the Mana icon font (bind the column to mana classes).
+      el('icon', '{{cost}}', 286, 14, 74, 26, { fontSize: 22, color: '#15110a', textAlign: 'right' }),
       el('image', '{{art}}', 16, 50, 343, 215, { borderWidth: 2, borderColor: '#15110a' }),
       el('text', '{{type}}', 18, 274, 343, 24, { fontSize: 14, fontWeight: 'bold', color: '#15110a' }),
       el('text', '{{text}}', 22, 306, 331, 158, { fontSize: 13, color: '#1a1308', backgroundColor: '#efe6cf', borderRadius: 4 }),
@@ -69,8 +71,9 @@ const magic: CardPreset = {
       el('text', '{{set}}', 18, 492, 200, 16, { fontSize: 9, color: '#4a3a1a' }),
     ]),
     rows: [
-      { name: 'Grizzly Bears', cost: '1G', type: 'Creature — Bear', text: 'A reliable 2/2 for two mana.', pt: '2 / 2', set: 'HOME • C', art: '' },
+      { name: 'Grizzly Bears', cost: 'ms ms-1 ms-cost', type: 'Creature — Bear', text: 'A reliable 2/2 for two mana. Set the cost column to Mana classes like "ms ms-2 ms-cost".', pt: '2 / 2', set: 'HOME • C', art: '' },
     ],
+    iconStylesheets: [MANA_CSS],
   }),
 };
 

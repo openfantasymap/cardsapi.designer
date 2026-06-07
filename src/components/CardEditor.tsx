@@ -123,6 +123,7 @@ export const CardEditor = () => {
         description: project.description || '',
         template: sheet.template,
         rows: sheet.rows.slice(0, 3),
+        iconStylesheets: project.iconStylesheets,
       });
       toast.success('Saved to your templates');
     } catch (e: any) {

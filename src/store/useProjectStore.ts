@@ -12,7 +12,7 @@ interface ProjectStore {
   /** When true, the canvas/panel edit the project-level global back instead of a sheet. */
   editingProjectBack: boolean;
 
-  createProject: (name: string, description: string, seed?: { template: CardTemplate; rows?: CardRow[] }) => string;
+  createProject: (name: string, description: string, seed?: { template: CardTemplate; rows?: CardRow[]; iconStylesheets?: string[] }) => string;
   upsertProject: (project: CardProject) => void;
   deleteProject: (id: string) => void;
   setActiveProject: (id: string | null) => void;
@@ -138,6 +138,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
           rows: seed?.rows ?? [],
         },
       ],
+      ...(seed?.iconStylesheets?.length ? { iconStylesheets: seed.iconStylesheets } : {}),
     };
     set((s) => ({ projects: [...s.projects, project] }));
     return id;
