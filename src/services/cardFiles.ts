@@ -23,7 +23,7 @@ const boxCss = (s: CardElement['style']): string =>
   (s.borderWidth ? `border:${s.borderWidth}px solid ${s.borderColor || '#000'};` : '') +
   (s.shadow ? 'box-shadow:0 2px 6px rgba(0,0,0,0.45);' : '');
 
-const elementHtml = (el: CardElement, row: CardRow): string => {
+const elementHtml = (el: CardElement, row: CardRow, assets?: Record<string, string>): string => {
   if (el.visibleIfField) {
     const v = row[el.visibleIfField];
     if (!v || v.trim() === '') return '';
@@ -37,7 +37,8 @@ const elementHtml = (el: CardElement, row: CardRow): string => {
   const box = boxCss(s);
 
   if (el.type === 'image') {
-    const src = tagMatch ? value : s.imageUrl || '';
+    const raw = tagMatch ? value : s.imageUrl || '';
+    const src = (raw && assets?.[raw]) || raw; // resolve asset filename → data URL/path
     return `<img src="${src}" style="${pos}object-fit:cover;${box}${rotation}" />`;
   }
   if (el.type === 'hline') {
@@ -66,23 +67,30 @@ const elementHtml = (el: CardElement, row: CardRow): string => {
 };
 
 /** Inline markup for one card (used for grids/PDF — no <html> wrapper). */
-export const cardInnerHtml = (template: CardTemplate, row: CardRow): string => {
-  const els = template.elements.map((el) => elementHtml(el, row)).join('\n    ');
-  const bg = template.backgroundImage
-    ? `background-image:url('${template.backgroundImage}');background-size:cover;background-position:center;`
+export const cardInnerHtml = (template: CardTemplate, row: CardRow, assets?: Record<string, string>): string => {
+  const els = template.elements.map((el) => elementHtml(el, row, assets)).join('\n    ');
+  const bgRaw = template.backgroundImage;
+  const bgSrc = (bgRaw && assets?.[bgRaw]) || bgRaw;
+  const bg = bgSrc
+    ? `background-image:url('${bgSrc}');background-size:cover;background-position:center;`
     : '';
   return `<div style="position:relative;width:${template.width}px;height:${template.height}px;background-color:${template.backgroundColor};${bg}overflow:hidden;">\n    ${els}\n</div>`;
 };
 
 /** A full standalone HTML document for a single card. */
-export const buildCardHtml = (template: CardTemplate, row: CardRow, extraIconCss: string[] = []): string => {
+export const buildCardHtml = (
+  template: CardTemplate,
+  row: CardRow,
+  extraIconCss: string[] = [],
+  assets?: Record<string, string>,
+): string => {
   const href = googleFontsHref(template.elements.map((el) => el.style.fontFamily));
   const fontLink = href ? `<link rel="stylesheet" href="${href}">` : '';
   const iconLinks = templateHasIcons(template) ? iconCssLinks(iconCssUrls(extraIconCss)) : '';
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8">${fontLink}${iconLinks}<style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111;}</style></head>
 <body>
-  ${cardInnerHtml(template, row)}
+  ${cardInnerHtml(template, row, assets)}
 </body></html>`;
 };
 
@@ -148,7 +156,7 @@ export const buildProjectTextFiles = (project: CardProject): Array<{ path: strin
     if (sheet.rows.length > 0) files.push({ path: `${folder}/data.csv`, text: buildCsv(sheet.rows) });
     files.push({ path: `${folder}/data.json`, text: JSON.stringify(sheet.rows, null, 2) });
     sheet.rows.forEach((row, i) => {
-      files.push({ path: `${folder}/card_${i + 1}.html`, text: buildCardHtml(sheet.template, row, project.iconStylesheets ?? []) });
+      files.push({ path: `${folder}/card_${i + 1}.html`, text: buildCardHtml(sheet.template, row, project.iconStylesheets ?? [], project.assets) });
     });
   }
 

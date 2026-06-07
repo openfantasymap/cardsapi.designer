@@ -115,6 +115,10 @@ export interface CardProject {
   /** Extra icon-font stylesheet URLs (beyond the built-in Font Awesome +
    *  RPG-Awesome) for `icon` elements. See docs/icons.md. */
   iconStylesheets?: string[];
+  /** Asset library: filename → data URL (in memory) or `assets/<name>` path
+   *  (as stored in the repo). Reference an asset by its filename from a
+   *  spreadsheet column or an image element's URL. */
+  assets?: Record<string, string>;
 }
 
 export const slugify = (name: string): string =>

@@ -5,7 +5,7 @@ import { cssFontFamily, loadGoogleFonts } from '@/lib/fonts';
 import { loadStylesheets, templateHasIcons, iconCssUrls } from '@/lib/icons';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 
-const renderElement = (el: CardElement, value?: string) => {
+const renderElement = (el: CardElement, value?: string, assets?: Record<string, string>) => {
   const display = value ?? el.tag;
   const s = el.style;
   const box: React.CSSProperties = {
@@ -64,7 +64,8 @@ const renderElement = (el: CardElement, value?: string) => {
         <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs" style={box}>SVG</div>
       );
     case 'image': {
-      const url = value !== undefined && value !== el.tag ? value : s.imageUrl;
+      const raw = value !== undefined && value !== el.tag ? value : s.imageUrl;
+      const url = (raw && assets?.[raw]) || raw; // resolve asset filename → data URL/path
       return url ? (
         <img src={url} alt={el.tag} className="w-full h-full object-cover" draggable={false} style={{ borderRadius: s.borderRadius ? `${s.borderRadius}px` : '0.25rem', ...box }} />
       ) : (
@@ -304,7 +305,7 @@ export const CardCanvas = () => {
                 style={{ left: el.x, top: el.y, width: el.width, height: el.height, transform: el.style.rotation ? `rotate(${el.style.rotation}deg)` : undefined }}
                 onPointerDown={(e) => beginGesture(e, el)}
               >
-                {renderElement(el)}
+                {renderElement(el, undefined, project?.assets)}
                 {isSel && (
                   <>
                     <div className="absolute inset-0 ring-2 ring-primary pointer-events-none" />

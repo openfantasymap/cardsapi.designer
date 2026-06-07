@@ -21,11 +21,13 @@ const CardFaceRender = ({
   row,
   scale,
   isFace,
+  assets,
 }: {
   template: CardTemplate;
   row: CardRow;
   scale: number;
   isFace?: 'front' | 'back';
+  assets?: Record<string, string>;
 }) => {
   const faceProps: Record<string, string> = {};
   if (isFace) {
@@ -40,7 +42,7 @@ const CardFaceRender = ({
         width: template.width,
         height: template.height,
         backgroundColor: template.backgroundColor,
-        backgroundImage: template.backgroundImage ? `url(${template.backgroundImage})` : undefined,
+        backgroundImage: template.backgroundImage ? `url(${assets?.[template.backgroundImage] ?? template.backgroundImage})` : undefined,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         transform: `scale(${scale})`,
@@ -82,7 +84,7 @@ const CardFaceRender = ({
             }}
             {...elProps}
           >
-            {renderElement(el, value)}
+            {renderElement(el, value, assets)}
           </div>
         );
       })}
@@ -98,6 +100,7 @@ const PublicCard = ({
   backTemplate,
   scale,
   extraColumns,
+  assets,
 }: {
   row: CardRow;
   index: number;
@@ -105,6 +108,7 @@ const PublicCard = ({
   backTemplate?: CardTemplate;
   scale: number;
   extraColumns: string[];
+  assets?: Record<string, string>;
 }) => {
   const [flipped, setFlipped] = useState(false);
   const hasBack = !!backTemplate;
@@ -141,6 +145,7 @@ const PublicCard = ({
           row={row}
           scale={scale}
           isFace={hasBack ? activeFace : undefined}
+          assets={assets}
         />
         {hasBack && (
           <div className="absolute top-1.5 right-1.5 bg-background/70 rounded-full p-1">
@@ -302,6 +307,7 @@ export const PublicCardSet = () => {
                     backTemplate={sheet.backTemplate}
                     scale={scale}
                     extraColumns={extraColumns}
+                    assets={project.assets}
                   />
                 ))}
               </div>

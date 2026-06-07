@@ -3,14 +3,14 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { renderElement } from '@/components/CardCanvas';
 import { CardTemplate, CardRow } from '@/types/card';
 
-const RenderCard = ({ template, row, scale }: { template: CardTemplate; row: CardRow; scale: number }) => (
+const RenderCard = ({ template, row, scale, assets }: { template: CardTemplate; row: CardRow; scale: number; assets?: Record<string, string> }) => (
   <div
     className="relative origin-top-left"
     style={{
       width: template.width,
       height: template.height,
       backgroundColor: template.backgroundColor,
-      backgroundImage: template.backgroundImage ? `url(${template.backgroundImage})` : undefined,
+      backgroundImage: template.backgroundImage ? `url(${assets?.[template.backgroundImage] ?? template.backgroundImage})` : undefined,
       backgroundSize: 'cover',
       backgroundPosition: 'center',
       transform: `scale(${scale})`,
@@ -30,7 +30,7 @@ const RenderCard = ({ template, row, scale }: { template: CardTemplate; row: Car
           className="absolute"
           style={{ left: el.x, top: el.y, width: el.width, height: el.height, transform: el.style.rotation ? `rotate(${el.style.rotation}deg)` : undefined }}
         >
-          {renderElement(el, value)}
+          {renderElement(el, value, assets)}
         </div>
       );
     })}
@@ -84,7 +84,7 @@ export const CardPreviewGrid = () => {
             className="rounded-lg overflow-hidden border border-border"
             style={{ width: activeTemplate.width * scale, height: activeTemplate.height * scale }}
           >
-            <RenderCard template={activeTemplate} row={row} scale={scale} />
+            <RenderCard template={activeTemplate} row={row} scale={scale} assets={project?.assets} />
           </div>
         ))}
       </div>

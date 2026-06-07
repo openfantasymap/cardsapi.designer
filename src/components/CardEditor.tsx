@@ -6,6 +6,7 @@ import { CardCanvas } from '@/components/CardCanvas';
 import { ElementPanel } from '@/components/ElementPanel';
 import { SpreadsheetPanel } from '@/components/SpreadsheetPanel';
 import { CardPreviewGrid } from '@/components/CardPreviewGrid';
+import { AssetsPanel } from '@/components/AssetsPanel';
 import { GitHubPanel } from '@/components/GitHubPanel';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -324,6 +325,9 @@ export const CardEditor = () => {
               <TabsTrigger value="preview" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
                 Preview ({sheet.rows.length})
               </TabsTrigger>
+              <TabsTrigger value="assets" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
+                Assets ({Object.keys(project.assets ?? {}).length})
+              </TabsTrigger>
             </TabsList>
 
             {/* Front/Back face toggle — only in Design tab context */}
@@ -356,6 +360,10 @@ export const CardEditor = () => {
 
           <TabsContent value="preview" className="flex-1 min-h-0 data-[state=active]:flex overflow-hidden mt-0 items-start">
             <CardPreviewGrid />
+          </TabsContent>
+
+          <TabsContent value="assets" className="flex-1 min-h-0 data-[state=active]:flex overflow-hidden mt-0 items-start">
+            <AssetsPanel />
           </TabsContent>
         </Tabs>
       )}

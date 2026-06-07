@@ -28,6 +28,7 @@ const EXT_TO_MIME: Record<string, string> = Object.fromEntries(
 );
 
 const IMAGES_DIR = 'images';
+const ASSETS_DIR = 'assets';
 const isDataUrl = (s: unknown): s is string => typeof s === 'string' && s.startsWith('data:');
 const isImagePath = (s: unknown): s is string =>
   typeof s === 'string' && s.startsWith(`${IMAGES_DIR}/`);
@@ -130,6 +131,23 @@ export const extractAssets = async (project: CardProject): Promise<ExtractResult
     return path;
   });
 
+  // Named asset library: write each data-URL asset to `assets/<name>` and store
+  // the path in the project (so project.json stays lean and assets are real files).
+  if (rewritten.assets) {
+    const out: Record<string, string> = {};
+    for (const [name, val] of Object.entries(rewritten.assets)) {
+      const parts = isDataUrl(val) ? parseDataUrl(val) : null;
+      if (parts) {
+        const path = `${ASSETS_DIR}/${name}`;
+        if (!filesByPath.has(path)) filesByPath.set(path, parts.bytes);
+        out[name] = path;
+      } else {
+        out[name] = val;
+      }
+    }
+    rewritten.assets = out;
+  }
+
   const files: CommitFile[] = Array.from(filesByPath, ([path, bytes]) => ({ path, bytes }));
   return { project: rewritten, files };
 };
@@ -144,7 +162,7 @@ export const inlineAssets = async (
 ): Promise<CardProject> => {
   const cache = new Map<string, string | null>();
 
-  return mapImageStrings(project, async (value) => {
+  const inlined = await mapImageStrings(project, async (value) => {
     if (!isImagePath(value)) return value;
     if (!cache.has(value)) {
       const bytes = await loadFile(value);
@@ -154,4 +172,22 @@ export const inlineAssets = async (
     }
     return cache.get(value) ?? value;
   });
+
+  // Rehydrate the named asset library (`assets/<name>` paths → data URLs).
+  if (inlined.assets) {
+    const out: Record<string, string> = {};
+    for (const [name, val] of Object.entries(inlined.assets)) {
+      if (typeof val === 'string' && val.startsWith(`${ASSETS_DIR}/`)) {
+        const bytes = await loadFile(val);
+        const ext = name.split('.').pop()?.toLowerCase() || '';
+        const mime = EXT_TO_MIME[ext] || 'application/octet-stream';
+        out[name] = bytes ? bytesToDataUrl(bytes, mime) : val;
+      } else {
+        out[name] = val;
+      }
+    }
+    inlined.assets = out;
+  }
+
+  return inlined;
 };

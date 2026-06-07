@@ -25,6 +25,8 @@ interface ProjectStore {
   togglePublic: (projectId: string) => void;
   updateSlug: (projectId: string, slug: string) => boolean;
   setIconStylesheets: (projectId: string, urls: string[]) => void;
+  addAssets: (projectId: string, files: { name: string; dataUrl: string }[]) => void;
+  removeAsset: (projectId: string, name: string) => void;
 
   // Sheet management
   addSheet: (projectId: string, name: string) => string;
@@ -213,6 +215,25 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   setIconStylesheets: (projectId, urls) =>
     set((s) => ({
       projects: s.projects.map((p) => (p.id === projectId ? { ...p, iconStylesheets: urls } : p)),
+    })),
+
+  addAssets: (projectId, files) =>
+    set((s) => ({
+      projects: s.projects.map((p) =>
+        p.id === projectId
+          ? { ...p, assets: { ...(p.assets ?? {}), ...Object.fromEntries(files.map((f) => [f.name, f.dataUrl])) } }
+          : p,
+      ),
+    })),
+
+  removeAsset: (projectId, name) =>
+    set((s) => ({
+      projects: s.projects.map((p) => {
+        if (p.id !== projectId) return p;
+        const next = { ...(p.assets ?? {}) };
+        delete next[name];
+        return { ...p, assets: next };
+      }),
     })),
 
   // Sheet management

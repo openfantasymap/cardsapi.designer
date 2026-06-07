@@ -306,9 +306,10 @@ export const ElementPanel = () => {
                     <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive shrink-0" title="Clear image" onClick={() => setStyle({ imageUrl: '' })}><X size={14} /></Button>
                   )}
                 </div>
-                <Input placeholder="…or paste an image URL" value={selectedElement.style.imageUrl || ''} onChange={(e) => setStyle({ imageUrl: e.target.value })} className="text-xs h-8" />
+                <Input placeholder="…asset filename or image URL" value={selectedElement.style.imageUrl || ''} onChange={(e) => setStyle({ imageUrl: e.target.value })} className="text-xs h-8" />
                 <p className="text-[11px] text-muted-foreground leading-snug">
-                  A bound tag like <code className="text-primary">{'{{art}}'}</code> overrides this with each card's value.
+                  Accepts an <strong>asset filename</strong> (from the Assets tab) or a URL. A bound tag like{' '}
+                  <code className="text-primary">{'{{art}}'}</code> overrides this per card.
                 </p>
               </div>
             )}

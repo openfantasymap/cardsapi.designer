@@ -39,13 +39,13 @@ const collectFaces = (project: CardProject): Face[] => {
 };
 
 /** Rasterise one face to a PNG data URL via an offscreen node. */
-const renderFaceToPng = async (face: Face): Promise<string> => {
+const renderFaceToPng = async (face: Face, assets?: Record<string, string>): Promise<string> => {
   const families = face.template.elements.map((el) => el.style.fontFamily).filter((f): f is string => !!f);
   loadGoogleFonts(families);
 
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-99999px;top:0;pointer-events:none;';
-  host.innerHTML = cardInnerHtml(face.template, face.row);
+  host.innerHTML = cardInnerHtml(face.template, face.row, assets);
   const node = host.firstElementChild as HTMLElement;
   document.body.appendChild(host);
   try {
@@ -74,12 +74,12 @@ export const exportProjectImages = async (project: CardProject) => {
   const base = safeName(project.name) || 'cards';
 
   if (faces.length === 1) {
-    saveAs(await renderFaceToPng(faces[0]), `${base}.png`);
+    saveAs(await renderFaceToPng(faces[0], project.assets), `${base}.png`);
     return;
   }
   const zip = new JSZip();
   for (const face of faces) {
-    const png = await renderFaceToPng(face);
+    const png = await renderFaceToPng(face, project.assets);
     zip.file(`${safeName(face.label)}.png`, png.split(',')[1], { base64: true });
   }
   saveAs(await zip.generateAsync({ type: 'blob' }), `${base}_images.zip`);
@@ -95,7 +95,7 @@ export const exportProjectPdf = async (project: CardProject) => {
   for (const face of faces) {
     const { width: w, height: h } = face.template;
     const orientation = w > h ? 'landscape' : 'portrait';
-    const png = await renderFaceToPng(face);
+    const png = await renderFaceToPng(face, project.assets);
     if (!pdf) {
       pdf = new jsPDF({ unit: 'px', format: [w, h], orientation });
     } else {
