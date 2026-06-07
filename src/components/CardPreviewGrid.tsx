@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { renderElement } from '@/components/CardCanvas';
 import { CardTemplate, CardRow } from '@/types/card';
+import { loadStylesheets, MANA_CSS } from '@/lib/icons';
+import { usesManaTokens } from '@/lib/mana';
 
 const RenderCard = ({ template, row, scale, assets }: { template: CardTemplate; row: CardRow; scale: number; assets?: Record<string, string> }) => (
   <div
@@ -45,6 +47,10 @@ export const CardPreviewGrid = () => {
   const backTemplate = sheet?.backTemplate;
   const rows = sheet?.rows ?? [];
   const [showBack, setShowBack] = useState(false);
+
+  useEffect(() => {
+    if (template && usesManaTokens(template, rows)) loadStylesheets([MANA_CSS]);
+  }, [template, rows]);
 
   if (!template) return null;
 

@@ -3,7 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import { useProjectStore } from '@/store/useProjectStore';
 import { renderElement } from '@/components/CardCanvas';
 import { loadGoogleFonts } from '@/lib/fonts';
-import { loadStylesheets, templateHasIcons, iconCssUrls } from '@/lib/icons';
+import { loadStylesheets, templateHasIcons, iconCssUrls, MANA_CSS } from '@/lib/icons';
+import { usesManaTokens } from '@/lib/mana';
 import { CardTemplate, CardRow, CardElement, TCG_SCHEMA_PROPERTIES } from '@/types/card';
 import { Input } from '@/components/ui/input';
 import { ArrowLeft, Search, RotateCcw } from 'lucide-react';
@@ -199,6 +200,10 @@ export const PublicCardSet = () => {
     loadGoogleFonts(fams);
     const usesIcons = project.sheets.some((sh) => templateHasIcons(sh.template) || templateHasIcons(sh.backTemplate));
     if (usesIcons) loadStylesheets(iconCssUrls(project.iconStylesheets));
+    const usesMana = project.sheets.some(
+      (sh) => usesManaTokens(sh.template, sh.rows) || (sh.backTemplate && usesManaTokens(sh.backTemplate, sh.rows)),
+    );
+    if (usesMana) loadStylesheets([MANA_CSS]);
   }, [project]);
 
   if (!project) {

@@ -15,7 +15,8 @@ import { saveAs } from 'file-saver';
 import { CardProject, CardTemplate, CardRow } from '@/types/card';
 import { cardInnerHtml } from '@/services/cardFiles';
 import { loadGoogleFonts } from '@/lib/fonts';
-import { loadStylesheets, templateHasIcons, iconCssUrls } from '@/lib/icons';
+import { loadStylesheets, templateHasIcons, iconCssUrls, MANA_CSS } from '@/lib/icons';
+import { usesManaTokens } from '@/lib/mana';
 
 interface Face {
   label: string;
@@ -71,6 +72,7 @@ export const exportProjectImages = async (project: CardProject) => {
   const faces = collectFaces(project);
   if (!faces.length) throw new Error('Nothing to render — add a card first.');
   if (faces.some((f) => templateHasIcons(f.template))) loadStylesheets(iconCssUrls(project.iconStylesheets));
+  if (faces.some((f) => usesManaTokens(f.template, [f.row]))) loadStylesheets([MANA_CSS]);
   const base = safeName(project.name) || 'cards';
 
   if (faces.length === 1) {
@@ -90,6 +92,7 @@ export const exportProjectPdf = async (project: CardProject) => {
   const faces = collectFaces(project);
   if (!faces.length) throw new Error('Nothing to render — add a card first.');
   if (faces.some((f) => templateHasIcons(f.template))) loadStylesheets(iconCssUrls(project.iconStylesheets));
+  if (faces.some((f) => usesManaTokens(f.template, [f.row]))) loadStylesheets([MANA_CSS]);
 
   let pdf: jsPDF | null = null;
   for (const face of faces) {

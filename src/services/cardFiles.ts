@@ -7,7 +7,8 @@
 
 import { CardProject, CardTemplate, CardElement, CardRow } from '@/types/card';
 import { cssFontFamily, googleFontsHref } from '@/lib/fonts';
-import { templateHasIcons, iconCssUrls, iconCssLinks } from '@/lib/icons';
+import { templateHasIcons, iconCssUrls, iconCssLinks, MANA_CSS } from '@/lib/icons';
+import { hasManaTokens, manaToHtml, usesManaTokens } from '@/lib/mana';
 
 /** Resolve a `{{field}}` tag against a row; non-tag strings pass through. */
 export const resolveTag = (tag: string, row: CardRow): string => {
@@ -51,9 +52,9 @@ const elementHtml = (el: CardElement, row: CardRow, assets?: Record<string, stri
     return `<div style="${pos}${box}${rotation}">${s.svgData ? `<img src="${s.svgData}" style="width:100%;height:100%;object-fit:contain;" />` : ''}</div>`;
   }
   if (el.type === 'icon') {
-    // Class from the resolved value (bind the tag to a column for per-card icons).
-    const cls = /\{\{.+\}\}/.test(value) ? '' : value;
-    return `<i class="${cls}" style="${pos}display:flex;align-items:center;justify-content:center;font-size:${s.fontSize || 24}px;color:${s.color || '#fff'};${box}${rotation}"></i>`;
+    // {1}{R}-style mana tokens → a row of symbols; otherwise a single icon class.
+    const inner = hasManaTokens(value) ? manaToHtml(value) : `<i class="${/\{\{.+\}\}/.test(value) ? '' : value}"></i>`;
+    return `<div style="${pos}display:flex;align-items:center;justify-content:center;gap:2px;font-size:${s.fontSize || 24}px;color:${s.color || '#fff'};${box}${rotation}">${inner}</div>`;
   }
   // text
   const align = s.textAlign || 'left';
@@ -62,7 +63,7 @@ const elementHtml = (el: CardElement, row: CardRow, assets?: Record<string, stri
     `<div style="${pos}display:flex;align-items:center;justify-content:${justify};` +
     `font-size:${s.fontSize || 14}px;font-weight:${s.fontWeight || 'normal'};font-style:${s.fontStyle || 'normal'};` +
     (s.fontFamily ? `font-family:${cssFontFamily(s.fontFamily)};` : '') +
-    `text-align:${align};color:${s.color || '#fff'};overflow:hidden;${box}${rotation}">${value}</div>`
+    `text-align:${align};color:${s.color || '#fff'};overflow:hidden;${box}${rotation}">${hasManaTokens(value) ? manaToHtml(value) : value}</div>`
   );
 };
 
@@ -87,8 +88,9 @@ export const buildCardHtml = (
   const href = googleFontsHref(template.elements.map((el) => el.style.fontFamily));
   const fontLink = href ? `<link rel="stylesheet" href="${href}">` : '';
   const iconLinks = templateHasIcons(template) ? iconCssLinks(iconCssUrls(extraIconCss)) : '';
+  const manaLink = usesManaTokens(template, row ? [row] : []) ? `<link rel="stylesheet" href="${MANA_CSS}">` : '';
   return `<!DOCTYPE html>
-<html><head><meta charset="utf-8">${fontLink}${iconLinks}<style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111;}</style></head>
+<html><head><meta charset="utf-8">${fontLink}${iconLinks}${manaLink}<style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#111;}</style></head>
 <body>
   ${cardInnerHtml(template, row, assets)}
 </body></html>`;

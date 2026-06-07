@@ -38,10 +38,20 @@ The Icon panel also has one-click presets for popular **symbol fonts**:
 | [Keyrune](https://keyrune.andrewgioia.com/) — MTG set symbols | `ss ss-<set>` | `ss ss-mid`, `ss ss-war` |
 
 These load only for projects that opt in. The **Magic-style** template ships with
-Mana enabled and an icon-based mana-cost field, so a `cost` column of Mana
-classes renders as real pips. Any project can add them from the Icon panel, and
-**templates carry their font set** — saving a project as a template preserves its
-custom symbol fonts.
+Mana enabled. Any project can add them from the Icon panel, and **templates carry
+their font set** — saving a project as a template preserves its custom symbol fonts.
+
+### `{1}{R}` mana syntax
+
+You don't need raw Mana classes — use **Scryfall-style tokens** and CardForge
+renders the glyphs (auto-loading the Mana font when tokens are present):
+
+- In a **mana-cost** field (text or icon element, or its bound column): `{1}{G}`,
+  `{W}{U}`, `{2/R}`, `{X}`, `{T}`.
+- **Inline in rules text**: `{T}: Add {G}{G}.` renders the symbols mixed with text.
+
+Tokens map to Mana classes automatically (`{R}` → `ms ms-r ms-cost`, `{W/U}` →
+`ms ms-wu`, `{T}` → `ms ms-tap`). `{{column}}` data-bindings are left alone.
 
 ## Add a single (static) icon
 

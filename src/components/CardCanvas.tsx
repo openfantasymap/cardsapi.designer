@@ -2,7 +2,8 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { CardElement } from '@/types/card';
 import { cssFontFamily, loadGoogleFonts } from '@/lib/fonts';
-import { loadStylesheets, templateHasIcons, iconCssUrls } from '@/lib/icons';
+import { loadStylesheets, templateHasIcons, iconCssUrls, MANA_CSS } from '@/lib/icons';
+import { hasManaTokens, manaToHtml, usesManaTokens } from '@/lib/mana';
 import { ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 
 const renderElement = (el: CardElement, value?: string, assets?: Record<string, string>) => {
@@ -17,30 +18,34 @@ const renderElement = (el: CardElement, value?: string, assets?: Record<string, 
   };
 
   switch (el.type) {
-    case 'text':
-      return (
-        <div
-          className="w-full h-full flex items-center truncate px-1"
-          style={{
-            ...box,
-            fontSize: s.fontSize || 14,
-            fontWeight: s.fontWeight || 'normal',
-            fontStyle: s.fontStyle || 'normal',
-            fontFamily: cssFontFamily(s.fontFamily) || undefined,
-            textAlign: s.textAlign || 'left',
-            justifyContent: s.textAlign === 'center' ? 'center' : s.textAlign === 'right' ? 'flex-end' : 'flex-start',
-            color: s.color || 'hsl(210 20% 92%)',
-          }}
-        >
-          {display}
-        </div>
+    case 'text': {
+      const textStyle: React.CSSProperties = {
+        ...box,
+        fontSize: s.fontSize || 14,
+        fontWeight: s.fontWeight || 'normal',
+        fontStyle: s.fontStyle || 'normal',
+        fontFamily: cssFontFamily(s.fontFamily) || undefined,
+        textAlign: s.textAlign || 'left',
+        justifyContent: s.textAlign === 'center' ? 'center' : s.textAlign === 'right' ? 'flex-end' : 'flex-start',
+        color: s.color || 'hsl(210 20% 92%)',
+      };
+      // Render {1}{R}-style mana tokens inline as symbols.
+      return hasManaTokens(display) ? (
+        <div className="w-full h-full flex items-center truncate px-1" style={textStyle} dangerouslySetInnerHTML={{ __html: manaToHtml(display) }} />
+      ) : (
+        <div className="w-full h-full flex items-center truncate px-1" style={textStyle}>{display}</div>
       );
+    }
     case 'icon': {
-      // The class comes from the resolved value (bind the tag to a column for
-      // per-card icons). Falls back to a marker when the class is unresolved.
+      const iconStyle: React.CSSProperties = { ...box, fontSize: s.fontSize || 24, color: s.color || 'hsl(var(--primary))' };
+      if (hasManaTokens(display)) {
+        // {1}{R} → a row of mana symbols.
+        return <div className="w-full h-full flex items-center justify-center gap-0.5" style={iconStyle} dangerouslySetInnerHTML={{ __html: manaToHtml(display) }} />;
+      }
+      // Otherwise a single icon-font class (bind the tag to a column for per-card icons).
       const cls = display && !/\{\{.+\}\}/.test(display) ? display : '';
       return (
-        <div className="w-full h-full flex items-center justify-center" style={{ ...box, fontSize: s.fontSize || 24, color: s.color || 'hsl(var(--primary))' }}>
+        <div className="w-full h-full flex items-center justify-center" style={iconStyle}>
           {cls ? <i className={cls} /> : <span className="opacity-40 text-xs">◆</span>}
         </div>
       );
@@ -147,7 +152,8 @@ export const CardCanvas = () => {
     if (!template) return;
     loadGoogleFonts(template.elements.map((el) => el.style.fontFamily));
     if (templateHasIcons(template)) loadStylesheets(iconCssUrls(project?.iconStylesheets));
-  }, [template, project?.iconStylesheets]);
+    if (usesManaTokens(template, sheet?.rows ?? [])) loadStylesheets([MANA_CSS]);
+  }, [template, project?.iconStylesheets, sheet?.rows]);
 
   // ── keyboard ─────────────────────────────────────────────────────────────
   useEffect(() => {

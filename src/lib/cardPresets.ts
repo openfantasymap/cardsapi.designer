@@ -71,7 +71,7 @@ const magic: CardPreset = {
       el('text', '{{set}}', 18, 492, 200, 16, { fontSize: 9, color: '#4a3a1a' }),
     ]),
     rows: [
-      { name: 'Grizzly Bears', cost: 'ms ms-1 ms-cost', type: 'Creature — Bear', text: 'A reliable 2/2 for two mana. Set the cost column to Mana classes like "ms ms-2 ms-cost".', pt: '2 / 2', set: 'HOME • C', art: '' },
+      { name: 'Grizzly Bears', cost: '{1}{G}', type: 'Creature — Bear', text: 'A vanilla 2/2. Tip: write mana as {1}{G} — it also renders inline in text.', pt: '2 / 2', set: 'HOME • C', art: '' },
     ],
     iconStylesheets: [MANA_CSS],
   }),
