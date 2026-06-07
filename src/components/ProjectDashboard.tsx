@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { GitHubAuthButton } from '@/components/GitHubAuthButton';
 import { listProjects, loadProject, type IndexEntry } from '@/services/projects';
+import { builtinTemplates, fetchGlobalTemplates, fetchPersonalTemplates, instantiate, type TemplateEntry } from '@/services/templates';
 import { useAutoSaveStore } from '@/store/autosave';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,6 +19,12 @@ export const ProjectDashboard = () => {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
+  const [selected, setSelected] = useState<TemplateEntry | null>(null); // null = Blank
+
+  const builtins = useMemo(() => builtinTemplates(), []);
+  const [globalT, setGlobalT] = useState<TemplateEntry[]>([]);
+  const [personalT, setPersonalT] = useState<TemplateEntry[]>([]);
+  const starters = globalT.length ? globalT : builtins; // global overrides built-ins when available
 
   const [remote, setRemote] = useState<IndexEntry[]>([]);
   const [syncing, setSyncing] = useState(false);
@@ -44,11 +51,27 @@ export const ProjectDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user?.login]);
 
+  // Load the shared (global) template library, and personal templates when connected.
+  useEffect(() => {
+    fetchGlobalTemplates().then(setGlobalT);
+  }, []);
+  useEffect(() => {
+    if (token && user) fetchPersonalTemplates(token, user.login).then(setPersonalT);
+    else setPersonalT([]);
+  }, [token, user?.login]);
+
+  const pickTemplate = (entry: TemplateEntry | null) => {
+    setSelected(entry);
+    if (entry && !name.trim()) setName(entry.label);
+  };
+
   const handleCreate = () => {
     if (!name.trim()) return;
-    const id = createProject(name.trim(), desc.trim());
+    const seed = selected ? instantiate(selected) : undefined;
+    const id = createProject(name.trim(), desc.trim(), seed);
     setName('');
     setDesc('');
+    setSelected(null);
     setOpen(false);
     setActiveProject(id);
   };
@@ -110,6 +133,46 @@ export const ProjectDashboard = () => {
                     onChange={(e) => setDesc(e.target.value)}
                     rows={2}
                   />
+
+                  <div>
+                    <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">Start from</p>
+                    <div className="grid grid-cols-2 gap-2 max-h-56 overflow-y-auto pr-1">
+                      {/* Blank */}
+                      <button
+                        type="button"
+                        onClick={() => pickTemplate(null)}
+                        className={`text-left rounded-md border p-2.5 transition-colors ${selected === null ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                      >
+                        <span className="text-xs font-display font-semibold text-foreground">Blank</span>
+                        <span className="block text-[11px] text-muted-foreground mt-0.5">Empty card.</span>
+                      </button>
+                      {/* Starter (global, or built-in fallback) */}
+                      {starters.map((t) => (
+                        <button
+                          key={`s-${t.id}`}
+                          type="button"
+                          onClick={() => pickTemplate(t)}
+                          className={`text-left rounded-md border p-2.5 transition-colors ${selected?.id === t.id && selected?.group === t.group ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                        >
+                          <span className="text-xs font-display font-semibold text-foreground truncate block">{t.label}</span>
+                          <span className="block text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{t.description}</span>
+                        </button>
+                      ))}
+                      {/* Personal */}
+                      {personalT.map((t) => (
+                        <button
+                          key={`p-${t.id}`}
+                          type="button"
+                          onClick={() => pickTemplate(t)}
+                          className={`text-left rounded-md border p-2.5 transition-colors ${selected?.id === t.id && selected?.group === 'personal' ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'}`}
+                        >
+                          <span className="text-xs font-display font-semibold text-foreground truncate block">{t.label} <span className="text-primary">★</span></span>
+                          <span className="block text-[11px] text-muted-foreground mt-0.5 line-clamp-2">{t.description || 'Your template'}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <Button onClick={handleCreate} className="w-full">Create</Button>
                 </div>
               </DialogContent>

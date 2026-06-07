@@ -12,7 +12,7 @@ interface ProjectStore {
   /** When true, the canvas/panel edit the project-level global back instead of a sheet. */
   editingProjectBack: boolean;
 
-  createProject: (name: string, description: string) => string;
+  createProject: (name: string, description: string, seed?: { template: CardTemplate; rows?: CardRow[] }) => string;
   upsertProject: (project: CardProject) => void;
   deleteProject: (id: string) => void;
   setActiveProject: (id: string | null) => void;
@@ -116,7 +116,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   activeFace: 'front',
   editingProjectBack: false,
 
-  createProject: (name, description) => {
+  createProject: (name, description, seed) => {
     const id = generateId();
     const sheetId = generateId();
     const base = slugify(name);
@@ -134,8 +134,8 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         {
           id: sheetId,
           name: 'Card',
-          template: makeDefaultTemplate(),
-          rows: [],
+          template: seed?.template ?? makeDefaultTemplate(),
+          rows: seed?.rows ?? [],
         },
       ],
     };

@@ -15,9 +15,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack, Image as ImageIcon, Loader2, Cloud, CloudOff, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { exportProjectJson, exportProjectZip, exportProjectPdfRemote } from '@/services/export';
 import { exportProjectImages, exportProjectPdf as exportProjectPdfLocalGenerated } from '@/services/render';
+import { savePersonalTemplate } from '@/services/templates';
+import { useGitHubStore } from '@/store/useGitHubStore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
@@ -106,6 +108,26 @@ export const CardEditor = () => {
       renameSheet(activeProjectId, renamingSheetId, renameValue.trim());
     }
     setRenamingSheetId(null);
+  };
+
+  const handleSaveTemplate = async () => {
+    const gh = useGitHubStore.getState();
+    if (!gh.token || !gh.user) { toast.error('Sign in to save a template'); return; }
+    if (!sheet) return;
+    const label = window.prompt('Template name', `${project.name} template`);
+    if (!label || !label.trim()) return;
+    try {
+      await savePersonalTemplate(gh.token, gh.user.login, {
+        id: slugify(label.trim()),
+        label: label.trim(),
+        description: project.description || '',
+        template: sheet.template,
+        rows: sheet.rows.slice(0, 3),
+      });
+      toast.success('Saved to your templates');
+    } catch (e: any) {
+      toast.error(e.message || 'Failed to save template');
+    }
   };
 
   const handleToggleBack = () => {
@@ -252,6 +274,10 @@ export const CardEditor = () => {
                 }
               }}>
                 <FileText size={14} className="mr-2" /> PDF (remote — high fidelity)
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSaveTemplate}>
+                <SquareStack size={14} className="mr-2" /> Save as template…
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

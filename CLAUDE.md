@@ -49,6 +49,11 @@ directly. Persistence layout (mirrors openhistorymap/archaeo-pro):
 - **Auto-save**: once signed in, edits auto-commit to the project repo
   (debounced, serialised — `src/store/autosave.ts`); the header shows the status
   and a manual "Save to GitHub" remains in the GitHub panel.
+- **Templates** (`src/services/templates.ts`): New Project → "Start from" offers
+  built-in starters (`src/lib/cardPresets.ts`, offline fallback), a **global**
+  public library (`openfantasymap/cardforge-templates` `index.json`, fetched
+  unauthenticated), and **personal** templates (`cardforge-index/templates/*.json`).
+  "Save as template…" (Export menu) writes the active layout to the personal set.
 
 The only server (`ccc-server`, `VITE_CARDFORGE_API_URL`) is a **stateless proxy**
 for the two things a browser can't do alone: the OAuth token exchange (CORS shim

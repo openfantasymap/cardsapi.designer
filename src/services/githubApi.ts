@@ -151,6 +151,21 @@ export const getFileText = async (
   return f ? bytesToText(f.bytes) : null;
 };
 
+export interface DirEntry {
+  name: string;
+  path: string;
+  type: 'file' | 'dir' | string;
+}
+
+/** List a directory's entries. Returns [] if the path/repo doesn't exist. */
+export const getDir = async (token: string, fullName: string, path: string): Promise<DirEntry[]> => {
+  const res = await fetch(`${API}/repos/${fullName}/contents/${path}`, { headers: headers(token) });
+  if (res.status === 404) return [];
+  if (!res.ok) throw new Error(`Failed to list ${path} in ${fullName}`);
+  const data = await res.json();
+  return Array.isArray(data) ? data.map((d: any) => ({ name: d.name, path: d.path, type: d.type })) : [];
+};
+
 // ── Atomic multi-file commit (Git Data API) ───────────────────────────────--
 
 export interface CommitFile {
