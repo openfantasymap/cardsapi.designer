@@ -3,6 +3,7 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { GitHubAuthButton } from '@/components/GitHubAuthButton';
 import { listProjects, loadProject, type IndexEntry } from '@/services/projects';
+import { useAutoSaveStore } from '@/store/autosave';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -58,6 +59,7 @@ export const ProjectDashboard = () => {
     try {
       const project = await loadProject(token, entry.repo);
       upsertProject(project);
+      useAutoSaveStore.getState().markSaved(project); // just loaded — already in sync
       setActiveProject(project.id);
     } catch (err) {
       toast.error((err as Error).message || `Failed to open ${entry.name}`);

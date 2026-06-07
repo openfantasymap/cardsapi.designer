@@ -43,6 +43,12 @@ directly. Persistence layout (mirrors openhistorymap/archaeo-pro):
   files), and `cards.jsonld` when annotated.
 - **One private index repo**: `cardforge-index` with `index.json` + `index.csv`
   listing every project, so any device discovers them after login.
+- **Assets**: `CardProject.assets` (filename → image) is written to `assets/<name>`
+  in the repo; reference an asset by filename from a spreadsheet column and bind
+  an image element to `{{column}}` for per-card art (managed in the Assets tab).
+- **Auto-save**: once signed in, edits auto-commit to the project repo
+  (debounced, serialised — `src/store/autosave.ts`); the header shows the status
+  and a manual "Save to GitHub" remains in the GitHub panel.
 
 The only server (`ccc-server`, `VITE_CARDFORGE_API_URL`) is a **stateless proxy**
 for the two things a browser can't do alone: the OAuth token exchange (CORS shim

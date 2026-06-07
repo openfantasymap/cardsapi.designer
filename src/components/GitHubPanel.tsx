@@ -3,6 +3,7 @@ import { useGitHubStore } from '@/store/useGitHubStore';
 import { useProjectStore } from '@/store/useProjectStore';
 import { login } from '@/services/githubAuth';
 import { saveProject, loadProject, repoNameForProject } from '@/services/projects';
+import { useAutoSaveStore } from '@/store/autosave';
 import { Button } from '@/components/ui/button';
 import { Github, LogOut, Save, Loader2, Download, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
@@ -30,6 +31,7 @@ export const GitHubPanel = () => {
     setSaving(true);
     try {
       const result = await saveProject(token, user.login, project);
+      useAutoSaveStore.getState().markSaved(project);
       toast.success(`Saved ${result.fileCount} files to ${result.repo}`, {
         action: { label: 'Open', onClick: () => window.open(result.htmlUrl, '_blank') },
       });
@@ -46,6 +48,7 @@ export const GitHubPanel = () => {
     try {
       const loaded = await loadProject(token, fullName);
       upsertProject(loaded);
+      useAutoSaveStore.getState().markSaved(loaded);
       toast.success(`Reloaded ${loaded.name} from GitHub`);
     } catch (err) {
       toast.error((err as Error).message || 'Reload failed');

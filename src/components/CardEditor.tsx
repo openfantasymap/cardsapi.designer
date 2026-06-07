@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useHistoryStore } from '@/store/history';
+import { useAutoSaveStore } from '@/store/autosave';
 import { slugify } from '@/types/card';
 import { CardCanvas } from '@/components/CardCanvas';
 import { ElementPanel } from '@/components/ElementPanel';
@@ -12,7 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack, Image as ImageIcon, Loader2, Cloud, CloudOff, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { exportProjectJson, exportProjectZip, exportProjectPdfRemote } from '@/services/export';
@@ -29,6 +30,7 @@ export const CardEditor = () => {
     editingProjectBack, editProjectBack, exitProjectBack,
   } = useProjectStore();
   const { undo, redo, past, future } = useHistoryStore();
+  const { status: saveStatus, saveNow } = useAutoSaveStore();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -148,6 +150,20 @@ export const CardEditor = () => {
           )}
         </div>
         <div className="ml-auto flex gap-2 items-center">
+          {/* Auto-save status (click = save now) */}
+          <button
+            onClick={() => saveNow()}
+            title="Auto-save to GitHub — click to save now"
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+          >
+            {saveStatus === 'saving' && (<><Loader2 size={12} className="animate-spin" /> Saving…</>)}
+            {saveStatus === 'saved' && (<><Check size={12} className="text-green-500" /> Saved</>)}
+            {saveStatus === 'dirty' && (<><Cloud size={12} /> Unsaved…</>)}
+            {saveStatus === 'error' && (<span className="flex items-center gap-1 text-destructive"><AlertCircle size={12} /> Retry save</span>)}
+            {(saveStatus === 'offline' || saveStatus === 'idle') && (<><CloudOff size={12} /> {saveStatus === 'offline' ? 'Local only' : 'Saved'}</>)}
+          </button>
+          <div className="border-l border-border h-6" />
+
           {/* Undo / redo */}
           <div className="flex items-center gap-0.5">
             <Button variant="ghost" size="icon" className="h-8 w-8 disabled:opacity-40" title="Undo (⌘Z)" disabled={past.length === 0} onClick={undo}>
