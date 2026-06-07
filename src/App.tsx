@@ -7,6 +7,7 @@ import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import { PublicCardSet } from "./pages/PublicCardSet.tsx";
 import AuthCallback from "./pages/AuthCallback.tsx";
+import EditorRoute from "./pages/EditorRoute.tsx";
 
 const queryClient = new QueryClient();
 
@@ -18,6 +19,7 @@ const App = () => (
       <BrowserRouter basename={import.meta.env.BASE_URL.replace(/\/$/, "")}>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/e/:slug" element={<EditorRoute />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/p/:slug" element={<PublicCardSet />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

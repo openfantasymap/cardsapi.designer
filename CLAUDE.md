@@ -93,7 +93,8 @@ Elements can carry `tcgType` (schema class) and `tcgProperty` annotations from t
 
 ### Routing (`src/App.tsx`)
 
-- `/` — Main app: shows `ProjectDashboard` (no active project) or `CardEditor` (active project).
+- `/` — `Index`: the `ProjectDashboard`.
+- `/e/:slug` — `EditorRoute`: opens a project for editing by slug — resolves it from the local store, else looks it up in the GitHub index and `loadProject`s it. The editor (`CardEditor`) is deep-linkable/shareable; editing the slug updates the URL.
 - `/auth/callback` — `AuthCallback`: exchanges the OAuth `?code` for a token (via the proxy relay), stores the session, and returns to where login started.
 - `/p/:slug` — `PublicCardSet`: read-only gallery of a public project's cards, rendered with HTML microdata annotations using the TCG Schema vocabulary.
 

@@ -2,19 +2,19 @@ import { useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { GitHubAuthButton } from '@/components/GitHubAuthButton';
-import { listProjects, loadProject, type IndexEntry } from '@/services/projects';
+import { listProjects, type IndexEntry } from '@/services/projects';
 import { builtinTemplates, fetchGlobalTemplates, fetchPersonalTemplates, instantiate, type TemplateEntry } from '@/services/templates';
-import { useAutoSaveStore } from '@/store/autosave';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Layers, Trash2, ArrowRight, Globe, Github, Loader2, RefreshCw, Download } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export const ProjectDashboard = () => {
-  const { projects, createProject, deleteProject, setActiveProject, upsertProject } = useProjectStore();
+  const navigate = useNavigate();
+  const { projects, createProject, deleteProject } = useProjectStore();
   const { token, user } = useGitHubStore();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
@@ -28,7 +28,6 @@ export const ProjectDashboard = () => {
 
   const [remote, setRemote] = useState<IndexEntry[]>([]);
   const [syncing, setSyncing] = useState(false);
-  const [openingSlug, setOpeningSlug] = useState<string | null>(null);
 
   const localIds = new Set(projects.map((p) => p.id));
   const remoteOnly = remote.filter((e) => !localIds.has(e.id));
@@ -69,27 +68,17 @@ export const ProjectDashboard = () => {
     if (!name.trim()) return;
     const seed = selected ? instantiate(selected) : undefined;
     const id = createProject(name.trim(), desc.trim(), seed);
+    const slug = useProjectStore.getState().projects.find((p) => p.id === id)?.slug ?? '';
     setName('');
     setDesc('');
     setSelected(null);
     setOpen(false);
-    setActiveProject(id);
+    navigate(`/e/${slug}`);
   };
 
-  const handleOpenRemote = async (entry: IndexEntry) => {
-    if (!token) return;
-    setOpeningSlug(entry.slug);
-    try {
-      const project = await loadProject(token, entry.repo);
-      upsertProject(project);
-      useAutoSaveStore.getState().markSaved(project); // just loaded — already in sync
-      setActiveProject(project.id);
-    } catch (err) {
-      toast.error((err as Error).message || `Failed to open ${entry.name}`);
-    } finally {
-      setOpeningSlug(null);
-    }
-  };
+  // Open a project (local or from GitHub) by navigating to its slug URL;
+  // /e/:slug resolves + loads it.
+  const handleOpenRemote = (entry: IndexEntry) => navigate(`/e/${entry.slug}`);
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -194,7 +183,7 @@ export const ProjectDashboard = () => {
               <div
                 key={project.id}
                 className="group bg-card border border-border rounded-lg p-5 hover:border-primary/40 hover:shadow-glow transition-all cursor-pointer"
-                onClick={() => setActiveProject(project.id)}
+                onClick={() => navigate(`/e/${project.slug}`)}
               >
                 <div className="flex items-start justify-between">
                   <div className="min-w-0 flex-1">
@@ -249,8 +238,7 @@ export const ProjectDashboard = () => {
               <button
                 key={entry.repo}
                 onClick={() => handleOpenRemote(entry)}
-                disabled={openingSlug === entry.slug}
-                className="group text-left bg-card/50 border border-dashed border-border rounded-lg p-5 hover:border-primary/40 transition-all disabled:opacity-60"
+                className="group text-left bg-card/50 border border-dashed border-border rounded-lg p-5 hover:border-primary/40 transition-all"
               >
                 <div className="flex items-start justify-between">
                   <div className="min-w-0 flex-1">
@@ -263,7 +251,7 @@ export const ProjectDashboard = () => {
                     <p className="text-muted-foreground text-xs mt-2 font-mono truncate">{entry.repo}</p>
                   </div>
                   <div className="ml-2 text-muted-foreground group-hover:text-primary">
-                    {openingSlug === entry.slug ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                    <Download size={14} />
                   </div>
                 </div>
               </button>

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useHistoryStore } from '@/store/history';
 import { useAutoSaveStore } from '@/store/autosave';
@@ -35,6 +36,7 @@ export const CardEditor = () => {
   } = useProjectStore();
   const { undo, redo, past, future } = useHistoryStore();
   const { status: saveStatus, saveNow } = useAutoSaveStore();
+  const navigate = useNavigate();
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -70,7 +72,12 @@ export const CardEditor = () => {
   const handleSlugSave = () => {
     if (activeProjectId && slugValue.trim()) {
       const ok = updateSlug(activeProjectId, slugValue.trim());
-      if (!ok) toast.error('Slug already taken or invalid');
+      if (ok) {
+        const newSlug = useProjectStore.getState().projects.find((p) => p.id === activeProjectId)?.slug;
+        if (newSlug) navigate(`/e/${newSlug}`, { replace: true });
+      } else {
+        toast.error('Slug already taken or invalid');
+      }
     }
     setEditingSlug(false);
   };
@@ -165,7 +172,7 @@ export const CardEditor = () => {
   return (
     <div className="fixed inset-0 overflow-hidden flex flex-col bg-background">
       <header className="h-12 border-b border-border flex items-center px-4 gap-3">
-        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setActiveProject(null)}>
+        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { setActiveProject(null); navigate('/'); }}>
           <ArrowLeft size={16} />
         </Button>
         <div className="flex flex-col justify-center min-w-0">
