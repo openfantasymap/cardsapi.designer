@@ -7,9 +7,9 @@ name: Deploy
 #   VITE_GITHUB_CLIENT_ID  — public OAuth App client id (PKCE login)
 #   VITE_CARDFORGE_API_URL — URL of the stateless proxy (token exchange + remote PDF)
 #
-# Served as a project site at https://openfantasymap.github.io/cardsapi.designer/
-# (vite base = /cardsapi.designer/). To switch to a custom domain later, add a
-# public/CNAME file and set vite base back to "/".
+# Served at the custom domain https://forge.cardsapi.com/ (public/CNAME), vite
+# base = "/". DNS for forge.cardsapi.com must point at GitHub Pages
+# (A 185.199.108-111.153, or CNAME -> openfantasymap.github.io).
 
 on:
   push:
