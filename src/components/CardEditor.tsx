@@ -19,6 +19,8 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { exportProjectJson, exportProjectZip, exportProjectPdfRemote } from '@/services/export';
 import { exportProjectImages, exportProjectPdf as exportProjectPdfLocalGenerated } from '@/services/render';
 import { savePersonalTemplate } from '@/services/templates';
+import { repoNameForProject } from '@/services/projects';
+import { setRepoVisibility } from '@/services/githubApi';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -108,6 +110,23 @@ export const CardEditor = () => {
       renameSheet(activeProjectId, renamingSheetId, renameValue.trim());
     }
     setRenamingSheetId(null);
+  };
+
+  // Toggle the app's public flag AND the GitHub repo's visibility.
+  const handleTogglePublic = async () => {
+    if (!activeProjectId || !project) return;
+    const next = !project.isPublic;
+    togglePublic(activeProjectId); // optimistic
+    const gh = useGitHubStore.getState();
+    if (!gh.token || !gh.user) return; // not signed in — local flag only (applied on first save)
+    try {
+      const repo = await setRepoVisibility(gh.token, `${gh.user.login}/${repoNameForProject(project.id)}`, next);
+      if (repo === null) toast.message(`Will be created ${next ? 'public' : 'private'} on first save`);
+      else toast.success(`Repository is now ${next ? 'public' : 'private'}`);
+    } catch (e: any) {
+      togglePublic(activeProjectId); // revert on failure
+      toast.error(e.message || 'Failed to change repository visibility');
+    }
   };
 
   const handleSaveTemplate = async () => {
@@ -205,7 +224,7 @@ export const CardEditor = () => {
             <Switch
               id="public-toggle"
               checked={!!project.isPublic}
-              onCheckedChange={() => activeProjectId && togglePublic(activeProjectId)}
+              onCheckedChange={handleTogglePublic}
               className="scale-75"
             />
             {project.isPublic && (

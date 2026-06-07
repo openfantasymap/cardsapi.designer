@@ -105,6 +105,25 @@ export const createRepo = async (
   return toRepoInfo(await res.json());
 };
 
+/** Change an existing repo's visibility. Returns null if the repo doesn't exist yet. */
+export const setRepoVisibility = async (
+  token: string,
+  fullName: string,
+  isPublic: boolean,
+): Promise<RepoInfo | null> => {
+  const res = await fetch(`${API}/repos/${fullName}`, {
+    method: 'PATCH',
+    headers: headers(token),
+    body: JSON.stringify({ private: !isPublic }),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Failed to change repository visibility');
+  }
+  return toRepoInfo(await res.json());
+};
+
 /** Return the repo (owner/name), creating it private + auto-initialized if absent. */
 export const ensureRepo = async (
   token: string,
