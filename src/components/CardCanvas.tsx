@@ -269,7 +269,7 @@ export const CardCanvas = () => {
   };
 
   return (
-    <div ref={containerRef} className="flex-1 min-w-0 min-h-0 overflow-auto bg-muted/20 relative grid place-items-center p-8">
+    <div ref={containerRef} data-tour="canvas" className="flex-1 min-w-0 min-h-0 overflow-auto bg-muted/20 relative grid place-items-center p-8">
       {/* zoom controls */}
       <div className="absolute top-3 right-3 z-10 flex items-center gap-1 rounded-md border border-border bg-card/90 backdrop-blur px-1 py-0.5 shadow-sm">
         <button className="p-1.5 hover:text-primary text-muted-foreground" title="Zoom out" onClick={() => setZoom((z) => Math.max(0.25, +(z - 0.1).toFixed(2)))}>

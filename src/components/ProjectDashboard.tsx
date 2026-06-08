@@ -3,13 +3,15 @@ import { useProjectStore } from '@/store/useProjectStore';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { GitHubAuthButton } from '@/components/GitHubAuthButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Tour, type TourStep } from '@/components/Tour';
+import { useTour } from '@/hooks/useTour';
 import { listProjects, type IndexEntry } from '@/services/projects';
 import { builtinTemplates, fetchGlobalTemplates, fetchPersonalTemplates, instantiate, type TemplateEntry } from '@/services/templates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Layers, Trash2, ArrowRight, Globe, Github, Loader2, RefreshCw, Download } from 'lucide-react';
+import { Plus, Layers, Trash2, ArrowRight, Globe, Github, Loader2, RefreshCw, Download, HelpCircle } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -29,6 +31,13 @@ export const ProjectDashboard = () => {
 
   const [remote, setRemote] = useState<IndexEntry[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const tour = useTour('dashboard');
+
+  const tourSteps: TourStep[] = [
+    { title: 'Welcome to CardForge', body: 'A quick tour of the basics. Design trading cards, fill them from a spreadsheet, and store everything in your own GitHub repos.' },
+    { selector: '[data-tour="new-project"]', title: 'Create a project', body: 'Start here. Pick a starter layout (Magic / Pokémon / Yu-Gi-Oh! / Hearthstone) or a blank card, name it, and Create.' },
+    { selector: '[data-tour="github"]', title: 'Sign in with GitHub', body: 'Connect GitHub to save & sync your projects — each becomes its own repo, and edits auto-save.' },
+  ];
 
   const localIds = new Set(projects.map((p) => p.id));
   const remoteOnly = remote.filter((e) => !localIds.has(e.id));
@@ -99,11 +108,14 @@ export const ProjectDashboard = () => {
                 {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Sync
               </Button>
             )}
+            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" title="Show guide" onClick={tour.start}>
+              <HelpCircle size={16} />
+            </Button>
             <ThemeToggle />
-            <GitHubAuthButton />
+            <span data-tour="github"><GitHubAuthButton /></span>
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
-                <Button className="gap-2">
+                <Button className="gap-2" data-tour="new-project">
                   <Plus size={16} /> New Project
                 </Button>
               </DialogTrigger>
@@ -270,6 +282,7 @@ export const ProjectDashboard = () => {
           </a>
         </footer>
       </div>
+      <Tour steps={tourSteps} open={tour.open} onClose={tour.close} />
     </div>
   );
 };

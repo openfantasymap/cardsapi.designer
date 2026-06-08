@@ -11,11 +11,13 @@ import { CardPreviewGrid } from '@/components/CardPreviewGrid';
 import { AssetsPanel } from '@/components/AssetsPanel';
 import { GitHubPanel } from '@/components/GitHubPanel';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { Tour, type TourStep } from '@/components/Tour';
+import { useTour } from '@/hooks/useTour';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack, Image as ImageIcon, Loader2, Cloud, CloudOff, AlertCircle, ExternalLink } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack, Image as ImageIcon, Loader2, Cloud, CloudOff, AlertCircle, ExternalLink, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { exportProjectJson, exportProjectZip, exportProjectPdfRemote } from '@/services/export';
@@ -38,6 +40,15 @@ export const CardEditor = () => {
   const { undo, redo, past, future } = useHistoryStore();
   const { status: saveStatus, saveNow } = useAutoSaveStore();
   const navigate = useNavigate();
+  const tour = useTour('editor');
+  const tourSteps: TourStep[] = [
+    { selector: '[data-tour="canvas"]', title: 'The card canvas', body: 'Drag elements to move them, use the handles to resize, arrow keys to nudge. Zoom/Fit controls are top-right.' },
+    { selector: '[data-tour="palette"]', title: 'Add & style elements', body: 'Add text, images, icons, lines. Bind any field to a spreadsheet column with {{name}}; tweak fonts, color, layer order here.' },
+    { selector: '[data-tour="tabs"]', title: 'Design · Data · Preview · Assets', body: 'Switch to Spreadsheet to enter card data, Preview to see every card, and Assets to upload images you reference by filename.' },
+    { selector: '[data-tour="save"]', title: 'Auto-save to GitHub', body: 'Signed-in edits commit to the project repo automatically. Click to save now.' },
+    { selector: '[data-tour="public"]', title: 'Publish', body: 'Flip Public to make the repo public and publish a shareable GitHub Pages gallery of your cards.' },
+    { selector: '[data-tour="export"]', title: 'Export & templates', body: 'Download JSON / ZIP / PNG / PDF, or save the current layout as a reusable template.' },
+  ];
   const project = projects.find((p) => p.id === activeProjectId);
   const sheet = project?.sheets.find((s) => s.id === activeSheetId);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -220,6 +231,7 @@ export const CardEditor = () => {
         <div className="ml-auto flex gap-2 items-center">
           {/* Auto-save status (click = save now) */}
           <button
+            data-tour="save"
             onClick={() => saveNow()}
             title="Auto-save to GitHub — click to save now"
             className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
@@ -231,6 +243,9 @@ export const CardEditor = () => {
             {(saveStatus === 'offline' || saveStatus === 'idle') && (<><CloudOff size={12} /> {saveStatus === 'offline' ? 'Local only' : 'Saved'}</>)}
           </button>
           <div className="border-l border-border h-6" />
+          <Button variant="ghost" size="icon" className="h-8 w-8" title="Show guide" onClick={tour.start}>
+            <HelpCircle size={15} />
+          </Button>
           <ThemeToggle />
 
           {/* Undo / redo */}
@@ -245,7 +260,7 @@ export const CardEditor = () => {
           <div className="border-l border-border h-6" />
 
           {/* Public toggle + copy URL */}
-          <div className="flex items-center gap-1.5">
+          <div data-tour="public" className="flex items-center gap-1.5">
             <Globe size={12} className={project.isPublic ? 'text-primary' : 'text-muted-foreground'} />
             <Label className="text-xs text-muted-foreground cursor-pointer" htmlFor="public-toggle">Public</Label>
             <Switch
@@ -296,7 +311,7 @@ export const CardEditor = () => {
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="gap-1 text-xs">
+              <Button variant="outline" size="sm" className="gap-1 text-xs" data-tour="export">
                 <Download size={12} /> Export
               </Button>
             </DropdownMenuTrigger>
@@ -408,7 +423,7 @@ export const CardEditor = () => {
 
       {sheet && (
         <Tabs value={tab} onValueChange={setTab} className="flex-1 min-h-0 flex flex-col overflow-hidden">
-          <div className="border-b border-border px-4 flex items-center">
+          <div data-tour="tabs" className="border-b border-border px-4 flex items-center">
             <TabsList className="h-9 bg-transparent p-0 gap-4">
               <TabsTrigger value="design" className="data-[state=active]:bg-transparent data-[state=active]:text-primary data-[state=active]:shadow-none text-xs font-display">
                 Design
@@ -461,6 +476,7 @@ export const CardEditor = () => {
           </TabsContent>
         </Tabs>
       )}
+      <Tour steps={tourSteps} open={tour.open} onClose={tour.close} />
     </div>
   );
 };

@@ -89,7 +89,7 @@ export const ElementPanel = () => {
   const isLine = selectedElement?.type === 'hline' || selectedElement?.type === 'vline';
 
   return (
-    <div className="w-72 min-w-[18rem] shrink-0 h-full bg-card border-l border-border p-4 overflow-y-auto flex flex-col gap-5">
+    <div data-tour="palette" className="w-72 min-w-[18rem] shrink-0 h-full bg-card border-l border-border p-4 overflow-y-auto flex flex-col gap-5">
       {/* Add */}
       <div>
         <SectionLabel>Add Element</SectionLabel>
