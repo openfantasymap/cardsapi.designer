@@ -18,6 +18,29 @@ import { loadGoogleFonts } from '@/lib/fonts';
 import { loadStylesheets, templateHasIcons, iconCssUrls, MANA_CSS } from '@/lib/icons';
 import { usesManaTokens } from '@/lib/mana';
 
+const PROXY_BASE = (import.meta.env.VITE_CARDFORGE_API_URL || '').replace(/\/+$/, '');
+const proxied = (url: string) => `${PROXY_BASE}/proxy/image?url=${encodeURIComponent(url)}`;
+const isExternal = (url: string) => /^https?:\/\//i.test(url) && (!PROXY_BASE || !url.startsWith(PROXY_BASE));
+
+/** Route cross-origin <img>/background images through the proxy so the canvas
+ *  doesn't taint when rasterising. No-op if the proxy isn't configured. */
+const proxifyImages = (host: HTMLElement) => {
+  if (!PROXY_BASE) return;
+  host.querySelectorAll('img').forEach((img) => {
+    const src = img.getAttribute('src') || '';
+    if (isExternal(src)) {
+      img.crossOrigin = 'anonymous';
+      img.setAttribute('src', proxied(src));
+    }
+  });
+  const stage = host.firstElementChild as HTMLElement | null;
+  const bg = stage?.style.backgroundImage;
+  if (stage && bg) {
+    const m = bg.match(/url\(["']?(https?:[^"')]+)["']?\)/i);
+    if (m && isExternal(m[1])) stage.style.backgroundImage = `url("${proxied(m[1])}")`;
+  }
+};
+
 interface Face {
   label: string;
   template: CardTemplate;
@@ -47,6 +70,7 @@ const renderFaceToPng = async (face: Face, assets?: Record<string, string>): Pro
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:-99999px;top:0;pointer-events:none;';
   host.innerHTML = cardInnerHtml(face.template, face.row, assets);
+  proxifyImages(host);
   const node = host.firstElementChild as HTMLElement;
   document.body.appendChild(host);
   try {
