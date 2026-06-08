@@ -37,6 +37,8 @@ export const loadStylesheets = (urls: Array<string | undefined>): void => {
     loaded.add(url);
     const link = document.createElement('link');
     link.rel = 'stylesheet';
+    // crossorigin so html-to-image can read the @font-face rules when exporting.
+    link.crossOrigin = 'anonymous';
     link.href = url;
     document.head.appendChild(link);
   }

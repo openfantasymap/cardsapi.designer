@@ -54,12 +54,20 @@ const renderFaceToPng = async (face: Face, assets?: Record<string, string>): Pro
       await Promise.all(families.map((f) => document.fonts.load(`16px '${f}'`).catch(() => undefined)));
       await document.fonts.ready;
     }
-    return await toPng(node, {
-      pixelRatio: 2,
-      cacheBust: true,
-      width: face.template.width,
-      height: face.template.height,
-    });
+    const opts = { pixelRatio: 2, cacheBust: true, width: face.template.width, height: face.template.height };
+    try {
+      return await toPng(node, opts);
+    } catch (err) {
+      // Most failures come from embedding web fonts (cross-origin CSS). Retry
+      // once without font embedding so the export still succeeds.
+      try {
+        return await toPng(node, { ...opts, skipFonts: true });
+      } catch {
+        throw new Error(
+          `Could not render a card to image. External image URLs must allow CORS — prefer uploaded images. (${(err as Error)?.message || err})`,
+        );
+      }
+    }
   } finally {
     document.body.removeChild(host);
   }

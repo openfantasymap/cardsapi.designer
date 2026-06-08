@@ -46,6 +46,9 @@ export const loadGoogleFonts = (families: Array<string | undefined>): void => {
   fresh.forEach((f) => loaded.add(f));
   const link = document.createElement('link');
   link.rel = 'stylesheet';
+  // crossorigin makes the stylesheet's cssRules readable so html-to-image can
+  // embed the fonts when rasterising to PNG/PDF.
+  link.crossOrigin = 'anonymous';
   link.href = `https://fonts.googleapis.com/css2?${fresh.map(familyParam).join('&')}&display=swap`;
   document.head.appendChild(link);
 };
