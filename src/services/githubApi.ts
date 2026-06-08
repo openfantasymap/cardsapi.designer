@@ -124,6 +124,28 @@ export const setRepoVisibility = async (
   return toRepoInfo(await res.json());
 };
 
+/** Enable GitHub Pages (build from main /) for a repo. Returns the Pages URL, or null. */
+export const enablePages = async (token: string, fullName: string): Promise<string | null> => {
+  let res = await fetch(`${API}/repos/${fullName}/pages`, {
+    method: 'POST',
+    headers: headers(token),
+    body: JSON.stringify({ source: { branch: 'main', path: '/' } }),
+  });
+  if (res.status === 409) {
+    // Already enabled — just read it.
+    res = await fetch(`${API}/repos/${fullName}/pages`, { headers: headers(token) });
+  }
+  if (!res.ok) return null;
+  return (await res.json()).html_url ?? null;
+};
+
+/** Current GitHub Pages URL for a repo, or null if Pages isn't enabled. */
+export const getPagesUrl = async (token: string, fullName: string): Promise<string | null> => {
+  const res = await fetch(`${API}/repos/${fullName}/pages`, { headers: headers(token) });
+  if (!res.ok) return null;
+  return (await res.json()).html_url ?? null;
+};
+
 /** Return the repo (owner/name), creating it private + auto-initialized if absent. */
 export const ensureRepo = async (
   token: string,

@@ -95,6 +95,7 @@ Elements can carry `tcgType` (schema class) and `tcgProperty` annotations from t
 
 - `/` — `Index`: the `ProjectDashboard`.
 - `/e/:slug` — `EditorRoute`: opens a project for editing by slug — resolves it from the local store, else looks it up in the GitHub index and `loadProject`s it. The editor (`CardEditor`) is deep-linkable/shareable; editing the slug updates the URL.
+- The header **Public** toggle sets the repo visibility public **and enables GitHub Pages**, then the public link points at the repo's Pages gallery (`project.pagesUrl`), not `/p/:slug`. (`/p/:slug` / `PublicCardSet` remains as an in-app preview only.)
 - `/auth/callback` — `AuthCallback`: exchanges the OAuth `?code` for a token (via the proxy relay), stores the session, and returns to where login started.
 - `/p/:slug` — `PublicCardSet`: read-only gallery of a public project's cards, rendered with HTML microdata annotations using the TCG Schema vocabulary.
 

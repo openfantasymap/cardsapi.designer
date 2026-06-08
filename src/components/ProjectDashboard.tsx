@@ -200,15 +200,17 @@ export const ProjectDashboard = () => {
                     </p>
                   </div>
                   <div className="flex gap-1 ml-2">
-                    {project.isPublic && (
-                      <Link
-                        to={`/p/${project.slug}`}
+                    {project.isPublic && project.pagesUrl && (
+                      <a
+                        href={project.pagesUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         onClick={(e) => e.stopPropagation()}
                         className="h-7 w-7 flex items-center justify-center text-primary opacity-0 group-hover:opacity-100 hover:text-primary/80"
-                        title={`View public page (/p/${project.slug})`}
+                        title={`Open public page (${project.pagesUrl})`}
                       >
                         <Globe size={14} />
-                      </Link>
+                      </a>
                     )}
                     <Button
                       variant="ghost"

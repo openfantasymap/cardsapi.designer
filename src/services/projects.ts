@@ -39,6 +39,7 @@ export interface IndexEntry {
   isPublic: boolean;
   updatedAt: string;
   htmlUrl: string;
+  pagesUrl?: string;
 }
 
 export interface SaveResult {
@@ -104,6 +105,7 @@ export const saveProject = async (
     isPublic: !!project.isPublic,
     updatedAt: new Date().toISOString(),
     htmlUrl: repo.html_url,
+    pagesUrl: project.pagesUrl,
   });
 
   return { repo: repo.full_name, fileCount: files.length, htmlUrl: repo.html_url };
@@ -130,7 +132,7 @@ export const loadProject = async (token: string, repoFullName: string): Promise<
 // ── Index repo ────────────────────────────────────────────────────────────--
 
 const indexCsv = (entries: IndexEntry[]): string => {
-  const cols: (keyof IndexEntry)[] = ['id', 'slug', 'name', 'description', 'repo', 'private', 'isPublic', 'updatedAt', 'htmlUrl'];
+  const cols: (keyof IndexEntry)[] = ['id', 'slug', 'name', 'description', 'repo', 'private', 'isPublic', 'updatedAt', 'htmlUrl', 'pagesUrl'];
   const escape = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const header = cols.join(',');
   const body = entries.map((e) => cols.map((c) => escape(e[c])).join(',')).join('\n');

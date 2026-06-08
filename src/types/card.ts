@@ -119,6 +119,8 @@ export interface CardProject {
    *  (as stored in the repo). Reference an asset by its filename from a
    *  spreadsheet column or an image element's URL. */
   assets?: Record<string, string>;
+  /** GitHub Pages URL of this project's repo (set when made public). */
+  pagesUrl?: string;
 }
 
 export const slugify = (name: string): string =>

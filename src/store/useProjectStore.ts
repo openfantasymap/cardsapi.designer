@@ -25,6 +25,7 @@ interface ProjectStore {
   togglePublic: (projectId: string) => void;
   updateSlug: (projectId: string, slug: string) => boolean;
   setIconStylesheets: (projectId: string, urls: string[]) => void;
+  setPagesUrl: (projectId: string, url: string) => void;
   addAssets: (projectId: string, files: { name: string; dataUrl: string }[]) => void;
   removeAsset: (projectId: string, name: string) => void;
 
@@ -216,6 +217,11 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   setIconStylesheets: (projectId, urls) =>
     set((s) => ({
       projects: s.projects.map((p) => (p.id === projectId ? { ...p, iconStylesheets: urls } : p)),
+    })),
+
+  setPagesUrl: (projectId, url) =>
+    set((s) => ({
+      projects: s.projects.map((p) => (p.id === projectId ? { ...p, pagesUrl: url } : p)),
     })),
 
   addAssets: (projectId, files) =>

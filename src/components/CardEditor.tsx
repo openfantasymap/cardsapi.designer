@@ -14,14 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack, Image as ImageIcon, Loader2, Cloud, CloudOff, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Upload, Github, Plus, X, Download, FileJson, FileText, RotateCcw, Globe, Copy, Check, Undo2, Redo2, CopyPlus, SquareStack, Image as ImageIcon, Loader2, Cloud, CloudOff, AlertCircle, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { exportProjectJson, exportProjectZip, exportProjectPdfRemote } from '@/services/export';
 import { exportProjectImages, exportProjectPdf as exportProjectPdfLocalGenerated } from '@/services/render';
 import { savePersonalTemplate } from '@/services/templates';
 import { repoNameForProject } from '@/services/projects';
-import { setRepoVisibility } from '@/services/githubApi';
+import { setRepoVisibility, enablePages } from '@/services/githubApi';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
@@ -32,7 +32,7 @@ export const CardEditor = () => {
     setActiveProject, setActiveSheet, setActiveFace,
     addSheet, duplicateSheet, removeSheet, renameSheet,
     updateTemplateBackground, enableBackTemplate, removeBackTemplate, togglePublic, updateSlug,
-    editingProjectBack, editProjectBack, exitProjectBack,
+    editingProjectBack, editProjectBack, exitProjectBack, setPagesUrl,
   } = useProjectStore();
   const { undo, redo, past, future } = useHistoryStore();
   const { status: saveStatus, saveNow } = useAutoSaveStore();
@@ -83,8 +83,11 @@ export const CardEditor = () => {
   };
 
   const handleCopyUrl = () => {
-    if (!project?.slug) return;
-    navigator.clipboard.writeText(`${window.location.origin}/p/${project.slug}`);
+    if (!project?.pagesUrl) {
+      toast.message('Save & turn on Public to generate the page URL');
+      return;
+    }
+    navigator.clipboard.writeText(project.pagesUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
   };
@@ -119,17 +122,32 @@ export const CardEditor = () => {
     setRenamingSheetId(null);
   };
 
-  // Toggle the app's public flag AND the GitHub repo's visibility.
+  // Toggle the app's public flag AND the GitHub repo's visibility; when going
+  // public, enable GitHub Pages so the static gallery is served.
   const handleTogglePublic = async () => {
     if (!activeProjectId || !project) return;
     const next = !project.isPublic;
     togglePublic(activeProjectId); // optimistic
     const gh = useGitHubStore.getState();
     if (!gh.token || !gh.user) return; // not signed in — local flag only (applied on first save)
+    const fullName = `${gh.user.login}/${repoNameForProject(project.id)}`;
     try {
-      const repo = await setRepoVisibility(gh.token, `${gh.user.login}/${repoNameForProject(project.id)}`, next);
-      if (repo === null) toast.message(`Will be created ${next ? 'public' : 'private'} on first save`);
-      else toast.success(`Repository is now ${next ? 'public' : 'private'}`);
+      const repo = await setRepoVisibility(gh.token, fullName, next);
+      if (repo === null) {
+        toast.message(`Will be created ${next ? 'public' : 'private'} on first save`);
+        return;
+      }
+      if (next) {
+        const url = await enablePages(gh.token, fullName).catch(() => null);
+        if (url) {
+          setPagesUrl(activeProjectId, url);
+          toast.success('Public — GitHub Pages enabled', { action: { label: 'Open', onClick: () => window.open(url, '_blank') } });
+        } else {
+          toast.success('Repository is now public', { description: 'Enable GitHub Pages in the repo settings to serve the gallery.' });
+        }
+      } else {
+        toast.success('Repository is now private');
+      }
     } catch (e: any) {
       togglePublic(activeProjectId); // revert on failure
       toast.error(e.message || 'Failed to change repository visibility');
@@ -234,10 +252,15 @@ export const CardEditor = () => {
               onCheckedChange={handleTogglePublic}
               className="scale-75"
             />
-            {project.isPublic && (
-              <button onClick={handleCopyUrl} className="text-muted-foreground hover:text-foreground" title="Copy public URL">
-                {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
-              </button>
+            {project.isPublic && project.pagesUrl && (
+              <>
+                <a href={project.pagesUrl} target="_blank" rel="noopener noreferrer" className="text-muted-foreground hover:text-foreground" title={`Open ${project.pagesUrl}`}>
+                  <ExternalLink size={12} />
+                </a>
+                <button onClick={handleCopyUrl} className="text-muted-foreground hover:text-foreground" title="Copy GitHub Pages URL">
+                  {copied ? <Check size={12} className="text-green-500" /> : <Copy size={12} />}
+                </button>
+              </>
             )}
           </div>
 
