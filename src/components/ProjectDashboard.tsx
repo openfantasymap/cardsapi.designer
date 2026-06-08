@@ -260,6 +260,13 @@ export const ProjectDashboard = () => {
             ))}
           </div>
         )}
+
+        <footer className="mt-16 pt-6 border-t border-border text-center text-xs text-muted-foreground">
+          created with <span className="text-red-500">♥</span> in Bologna by{' '}
+          <a href="https://www.fantasymaps.org" target="_blank" rel="noopener noreferrer" className="hover:text-foreground underline-offset-2 hover:underline">
+            FantasyMaps
+          </a>
+        </footer>
       </div>
     </div>
   );
