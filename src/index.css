@@ -5,7 +5,57 @@
 @tailwind utilities;
 
 @layer base {
+  /* Light theme (default tokens; shared fonts/radius/gradient live here). */
   :root {
+    --background: 210 25% 98%;
+    --foreground: 220 25% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 25% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 25% 12%;
+
+    --primary: 185 72% 38%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 42 75% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 210 16% 93%;
+    --muted-foreground: 220 12% 40%;
+
+    --accent: 185 55% 90%;
+    --accent-foreground: 185 80% 22%;
+
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 14% 87%;
+    --input: 220 14% 87%;
+    --ring: 185 72% 38%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 210 25% 96%;
+    --sidebar-foreground: 220 20% 25%;
+    --sidebar-primary: 185 72% 38%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 16% 90%;
+    --sidebar-accent-foreground: 220 20% 25%;
+    --sidebar-border: 220 14% 85%;
+    --sidebar-ring: 185 72% 38%;
+
+    --font-display: 'JetBrains Mono', monospace;
+    --font-body: 'Inter', sans-serif;
+
+    --shadow-glow: 0 0 20px hsl(185 72% 45% / 0.18);
+    --shadow-card: 0 4px 24px hsl(220 20% 50% / 0.15);
+    --gradient-accent: linear-gradient(135deg, hsl(185 72% 45%), hsl(42 80% 55%));
+  }
+
+  /* Dark theme (the original palette). */
+  .dark {
     --background: 220 20% 7%;
     --foreground: 210 20% 92%;
 
@@ -34,8 +84,6 @@
     --input: 220 15% 18%;
     --ring: 185 80% 55%;
 
-    --radius: 0.5rem;
-
     --sidebar-background: 220 18% 8%;
     --sidebar-foreground: 210 20% 85%;
     --sidebar-primary: 185 80% 55%;
@@ -45,12 +93,8 @@
     --sidebar-border: 220 15% 16%;
     --sidebar-ring: 185 80% 55%;
 
-    --font-display: 'JetBrains Mono', monospace;
-    --font-body: 'Inter', sans-serif;
-
     --shadow-glow: 0 0 20px hsl(185 80% 55% / 0.15);
     --shadow-card: 0 4px 24px hsl(0 0% 0% / 0.4);
-    --gradient-accent: linear-gradient(135deg, hsl(185 80% 55%), hsl(42 80% 55%));
   }
 }
 

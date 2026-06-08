@@ -10,6 +10,7 @@ import { SpreadsheetPanel } from '@/components/SpreadsheetPanel';
 import { CardPreviewGrid } from '@/components/CardPreviewGrid';
 import { AssetsPanel } from '@/components/AssetsPanel';
 import { GitHubPanel } from '@/components/GitHubPanel';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -230,6 +231,7 @@ export const CardEditor = () => {
             {(saveStatus === 'offline' || saveStatus === 'idle') && (<><CloudOff size={12} /> {saveStatus === 'offline' ? 'Local only' : 'Saved'}</>)}
           </button>
           <div className="border-l border-border h-6" />
+          <ThemeToggle />
 
           {/* Undo / redo */}
           <div className="flex items-center gap-0.5">

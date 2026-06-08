@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useProjectStore } from '@/store/useProjectStore';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { GitHubAuthButton } from '@/components/GitHubAuthButton';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { listProjects, type IndexEntry } from '@/services/projects';
 import { builtinTemplates, fetchGlobalTemplates, fetchPersonalTemplates, instantiate, type TemplateEntry } from '@/services/templates';
 import { Button } from '@/components/ui/button';
@@ -98,6 +99,7 @@ export const ProjectDashboard = () => {
                 {syncing ? <Loader2 size={14} className="animate-spin" /> : <RefreshCw size={14} />} Sync
               </Button>
             )}
+            <ThemeToggle />
             <GitHubAuthButton />
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
