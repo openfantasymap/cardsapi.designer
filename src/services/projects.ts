@@ -40,6 +40,8 @@ export interface IndexEntry {
   updatedAt: string;
   htmlUrl: string;
   pagesUrl?: string;
+  /** Soft-delete flag — hidden in the dashboard unless "Show deleted" is on. */
+  deleted?: boolean;
 }
 
 export interface SaveResult {
@@ -132,7 +134,7 @@ export const loadProject = async (token: string, repoFullName: string): Promise<
 // ── Index repo ────────────────────────────────────────────────────────────--
 
 const indexCsv = (entries: IndexEntry[]): string => {
-  const cols: (keyof IndexEntry)[] = ['id', 'slug', 'name', 'description', 'repo', 'private', 'isPublic', 'updatedAt', 'htmlUrl', 'pagesUrl'];
+  const cols: (keyof IndexEntry)[] = ['id', 'slug', 'name', 'description', 'repo', 'private', 'isPublic', 'updatedAt', 'htmlUrl', 'pagesUrl', 'deleted'];
   const escape = (v: unknown) => `"${String(v ?? '').replace(/"/g, '""')}"`;
   const header = cols.join(',');
   const body = entries.map((e) => cols.map((c) => escape(e[c])).join(',')).join('\n');
@@ -189,4 +191,17 @@ export const upsertIndexEntry = async (
 export const removeIndexEntry = async (token: string, owner: string, id: string): Promise<void> => {
   const entries = await readIndex(token, owner);
   await writeIndex(token, owner, entries.filter((e) => e.id !== id));
+};
+
+/** Soft-delete / restore a project in the index. Returns the updated entries. */
+export const setProjectDeleted = async (
+  token: string,
+  owner: string,
+  id: string,
+  deleted: boolean,
+): Promise<IndexEntry[]> => {
+  const entries = await readIndex(token, owner);
+  const next = entries.map((e) => (e.id === id ? { ...e, deleted } : e));
+  await writeIndex(token, owner, next);
+  return next;
 };

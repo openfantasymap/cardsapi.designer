@@ -5,13 +5,13 @@ import { GitHubAuthButton } from '@/components/GitHubAuthButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Tour, type TourStep } from '@/components/Tour';
 import { useTour } from '@/hooks/useTour';
-import { listProjects, type IndexEntry } from '@/services/projects';
+import { listProjects, setProjectDeleted, type IndexEntry } from '@/services/projects';
 import { builtinTemplates, fetchGlobalTemplates, fetchPersonalTemplates, instantiate, type TemplateEntry } from '@/services/templates';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Layers, Trash2, ArrowRight, Globe, Github, Loader2, RefreshCw, Download, HelpCircle } from 'lucide-react';
+import { Plus, Layers, Trash2, ArrowRight, Globe, Github, Loader2, RefreshCw, Download, HelpCircle, RotateCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -31,6 +31,7 @@ export const ProjectDashboard = () => {
 
   const [remote, setRemote] = useState<IndexEntry[]>([]);
   const [syncing, setSyncing] = useState(false);
+  const [showDeleted, setShowDeleted] = useState(false);
   const tour = useTour('dashboard');
 
   const tourSteps: TourStep[] = [
@@ -40,7 +41,10 @@ export const ProjectDashboard = () => {
   ];
 
   const localIds = new Set(projects.map((p) => p.id));
-  const remoteOnly = remote.filter((e) => !localIds.has(e.id));
+  const deletedIds = new Set(remote.filter((e) => e.deleted).map((e) => e.id));
+  const localVisible = projects.filter((p) => !deletedIds.has(p.id));
+  const remoteActive = remote.filter((e) => !e.deleted && !localIds.has(e.id));
+  const deletedEntries = remote.filter((e) => e.deleted);
 
   const syncFromGitHub = async () => {
     if (!token || !user) return;
@@ -89,6 +93,29 @@ export const ProjectDashboard = () => {
   // Open a project (local or from GitHub) by navigating to its slug URL;
   // /e/:slug resolves + loads it.
   const handleOpenRemote = (entry: IndexEntry) => navigate(`/e/${entry.slug}`);
+
+  // Soft-delete: drop locally and flag in the GitHub index (so it stays hidden
+  // and doesn't reappear on sync). The repo is kept; restore re-shows it.
+  const handleDelete = async (id: string) => {
+    deleteProject(id);
+    if (token && user && remote.some((e) => e.id === id)) {
+      try {
+        setRemote(await setProjectDeleted(token, user.login, id, true));
+      } catch {
+        toast.error('Failed to update GitHub — it may reappear on next sync');
+      }
+    }
+  };
+
+  const handleRestore = async (entry: IndexEntry) => {
+    if (!token || !user) return;
+    try {
+      setRemote(await setProjectDeleted(token, user.login, entry.id, false));
+      toast.success(`Restored ${entry.name}`);
+    } catch {
+      toast.error('Restore failed');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -183,7 +210,18 @@ export const ProjectDashboard = () => {
           </div>
         </div>
 
-        {projects.length === 0 && remoteOnly.length === 0 ? (
+        {deletedEntries.length > 0 && (
+          <div className="flex justify-end mb-3">
+            <button
+              onClick={() => setShowDeleted((v) => !v)}
+              className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+            >
+              <Trash2 size={12} /> {showDeleted ? 'Hide' : 'Show'} deleted ({deletedEntries.length})
+            </button>
+          </div>
+        )}
+
+        {localVisible.length === 0 && remoteActive.length === 0 && !(showDeleted && deletedEntries.length) ? (
           <div className="text-center py-24 animate-fade-in">
             <Layers size={48} className="mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground text-lg">No projects yet</p>
@@ -193,7 +231,7 @@ export const ProjectDashboard = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
-            {projects.map((project) => (
+            {localVisible.map((project) => (
               <div
                 key={project.id}
                 className="group bg-card border border-border rounded-lg p-5 hover:border-primary/40 hover:shadow-glow transition-all cursor-pointer"
@@ -232,7 +270,7 @@ export const ProjectDashboard = () => {
                       className="h-7 w-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
                       onClick={(e) => {
                         e.stopPropagation();
-                        deleteProject(project.id);
+                        handleDelete(project.id);
                       }}
                     >
                       <Trash2 size={14} />
@@ -250,7 +288,7 @@ export const ProjectDashboard = () => {
             ))}
 
             {/* Projects that exist on GitHub but aren't open locally yet. */}
-            {remoteOnly.map((entry) => (
+            {remoteActive.map((entry) => (
               <button
                 key={entry.repo}
                 onClick={() => handleOpenRemote(entry)}
@@ -272,6 +310,27 @@ export const ProjectDashboard = () => {
                 </div>
               </button>
             ))}
+          </div>
+        )}
+
+        {showDeleted && deletedEntries.length > 0 && (
+          <div className="mt-8">
+            <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-3">Deleted</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {deletedEntries.map((entry) => (
+                <div key={entry.repo} className="bg-card/40 border border-dashed border-border rounded-lg p-5 opacity-70">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="font-display text-sm font-semibold text-foreground truncate line-through">{entry.name}</h3>
+                      <p className="text-muted-foreground text-xs mt-2 font-mono truncate">{entry.repo}</p>
+                    </div>
+                    <Button variant="outline" size="sm" className="text-xs h-7 shrink-0" onClick={() => handleRestore(entry)}>
+                      <RotateCcw size={12} className="mr-1" /> Restore
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
