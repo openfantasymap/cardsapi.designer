@@ -47,10 +47,17 @@ export const CardPreviewGrid = () => {
   const backTemplate = sheet?.backTemplate;
   const rows = sheet?.rows ?? [];
   const [showBack, setShowBack] = useState(false);
+  const [zoom, setZoom] = useState<{ template: CardTemplate; row: CardRow } | null>(null);
 
   useEffect(() => {
     if (template && usesManaTokens(template, rows)) loadStylesheets([MANA_CSS]);
   }, [template, rows]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setZoom(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   if (!template) return null;
 
@@ -64,6 +71,9 @@ export const CardPreviewGrid = () => {
 
   const scale = 0.45;
   const activeTemplate = showBack && backTemplate ? backTemplate : template;
+  const fit = zoom
+    ? Math.min((window.innerWidth * 0.92) / zoom.template.width, (window.innerHeight * 0.9) / zoom.template.height)
+    : 1;
 
   return (
     <div className="flex-1 overflow-auto p-6">
@@ -87,13 +97,28 @@ export const CardPreviewGrid = () => {
         {rows.map((row, i) => (
           <div
             key={i}
-            className="rounded-lg overflow-hidden border border-border"
+            onClick={() => setZoom({ template: activeTemplate, row })}
+            className="rounded-lg overflow-hidden border border-border cursor-zoom-in hover:border-primary/50 transition-colors"
             style={{ width: activeTemplate.width * scale, height: activeTemplate.height * scale }}
           >
             <RenderCard template={activeTemplate} row={row} scale={scale} assets={project?.assets} />
           </div>
         ))}
       </div>
+
+      {zoom && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 flex items-center justify-center p-4 cursor-zoom-out"
+          onClick={() => setZoom(null)}
+        >
+          <div
+            className="rounded-xl overflow-hidden shadow-2xl"
+            style={{ width: zoom.template.width * fit, height: zoom.template.height * fit }}
+          >
+            <RenderCard template={zoom.template} row={zoom.row} scale={fit} assets={project?.assets} />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
