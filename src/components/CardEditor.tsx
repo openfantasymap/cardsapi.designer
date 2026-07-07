@@ -28,6 +28,9 @@ import { setRepoVisibility, enablePages } from '@/services/githubApi';
 import { useGitHubStore } from '@/store/useGitHubStore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { CardSizePicker } from '@/components/CardSizePicker';
+import { DEFAULT_CARD_SIZE } from '@/lib/cardSizes';
 
 export const CardEditor = () => {
   const {
@@ -58,6 +61,9 @@ export const CardEditor = () => {
   const [slugValue, setSlugValue] = useState('');
   const [copied, setCopied] = useState(false);
   const [tab, setTab] = useState('design');
+  const [addOpen, setAddOpen] = useState(false);
+  const [newCardName, setNewCardName] = useState('');
+  const [newCardSize, setNewCardSize] = useState({ width: DEFAULT_CARD_SIZE.width, height: DEFAULT_CARD_SIZE.height });
 
   // Undo / redo keyboard shortcuts (skip while typing in a field).
   useEffect(() => {
@@ -116,10 +122,23 @@ export const CardEditor = () => {
     reader.readAsDataURL(file);
   };
 
+  // Prefill the add-card dialog: default name + the current card's size, so new
+  // cards match the set by default (but the size can be changed per card).
+  const openAddSheet = (open: boolean) => {
+    setAddOpen(open);
+    if (open) {
+      setNewCardName(`Card ${project.sheets.length + 1}`);
+      setNewCardSize(sheet
+        ? { width: sheet.template.width, height: sheet.template.height }
+        : { width: DEFAULT_CARD_SIZE.width, height: DEFAULT_CARD_SIZE.height });
+    }
+  };
+
   const handleAddSheet = () => {
     if (!activeProjectId) return;
-    const name = `Card ${project.sheets.length + 1}`;
-    addSheet(activeProjectId, name);
+    const name = newCardName.trim() || `Card ${project.sheets.length + 1}`;
+    addSheet(activeProjectId, name, newCardSize);
+    setAddOpen(false);
   };
 
   const handleStartRename = (sheetId: string, currentName: string) => {
@@ -400,9 +419,32 @@ export const CardEditor = () => {
             )}
           </div>
         ))}
-        <Button variant="ghost" size="icon" className="h-7 w-7" title="Add sheet" onClick={handleAddSheet}>
-          <Plus size={12} />
-        </Button>
+        <Dialog open={addOpen} onOpenChange={openAddSheet}>
+          <DialogTrigger asChild>
+            <Button variant="ghost" size="icon" className="h-7 w-7" title="Add card">
+              <Plus size={12} />
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Add card</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-2">
+              <Input
+                placeholder="Card name"
+                value={newCardName}
+                onChange={(e) => setNewCardName(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddSheet()}
+                autoFocus
+              />
+              <div>
+                <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">Card size</p>
+                <CardSizePicker initial={newCardSize} onChange={setNewCardSize} />
+              </div>
+              <Button onClick={handleAddSheet} className="w-full">Add</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
         {activeSheetId && (
           <Button variant="ghost" size="icon" className="h-7 w-7" title="Duplicate sheet" onClick={() => duplicateSheet(activeProjectId!, activeSheetId)}>
             <CopyPlus size={12} />

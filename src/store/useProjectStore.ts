@@ -30,7 +30,7 @@ interface ProjectStore {
   removeAsset: (projectId: string, name: string) => void;
 
   // Sheet management
-  addSheet: (projectId: string, name: string) => string;
+  addSheet: (projectId: string, name: string, size?: { width: number; height: number }) => string;
   duplicateSheet: (projectId: string, sheetId: string) => void;
   removeSheet: (projectId: string, sheetId: string) => void;
   renameSheet: (projectId: string, sheetId: string, name: string) => void;
@@ -251,12 +251,17 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     })),
 
   // Sheet management
-  addSheet: (projectId, name) => {
+  addSheet: (projectId, name, size) => {
     const sheetId = generateId();
+    const template = makeDefaultTemplate();
+    if (size) {
+      template.width = size.width;
+      template.height = size.height;
+    }
     const sheet: CardSheet = {
       id: sheetId,
       name,
-      template: makeDefaultTemplate(),
+      template,
       rows: [],
     };
     set((s) => ({
