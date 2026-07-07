@@ -12,7 +12,7 @@ interface ProjectStore {
   /** When true, the canvas/panel edit the project-level global back instead of a sheet. */
   editingProjectBack: boolean;
 
-  createProject: (name: string, description: string, seed?: { template: CardTemplate; rows?: CardRow[]; iconStylesheets?: string[] }) => string;
+  createProject: (name: string, description: string, seed?: { template: CardTemplate; rows?: CardRow[]; iconStylesheets?: string[] }, size?: { width: number; height: number }) => string;
   upsertProject: (project: CardProject) => void;
   deleteProject: (id: string) => void;
   setActiveProject: (id: string | null) => void;
@@ -117,7 +117,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
   activeFace: 'front',
   editingProjectBack: false,
 
-  createProject: (name, description, seed) => {
+  createProject: (name, description, seed, size) => {
     const id = generateId();
     const sheetId = generateId();
     const base = slugify(name);
@@ -125,6 +125,13 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
     let slug = base;
     let n = 2;
     while (taken.has(slug)) slug = `${base}-${n++}`;
+    // Seed from a starter (already sized) or a fresh default, then apply the
+    // chosen card size on top. Both are freshly-owned objects, safe to mutate.
+    const template = seed?.template ?? makeDefaultTemplate();
+    if (size) {
+      template.width = size.width;
+      template.height = size.height;
+    }
     const project: CardProject = {
       id,
       name,
@@ -135,7 +142,7 @@ export const useProjectStore = create<ProjectStore>((set, get) => ({
         {
           id: sheetId,
           name: 'Card',
-          template: seed?.template ?? makeDefaultTemplate(),
+          template,
           rows: seed?.rows ?? [],
         },
       ],
