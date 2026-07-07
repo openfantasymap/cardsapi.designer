@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { CARD_SIZE_PRESETS, CUSTOM_SIZE_ID, DEFAULT_CARD_SIZE, matchCardSize } from '@/lib/cardSizes';
 import { Plus, Layers, Trash2, ArrowRight, Globe, Github, Loader2, RefreshCw, Download, HelpCircle, RotateCcw } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -23,6 +26,9 @@ export const ProjectDashboard = () => {
   const [name, setName] = useState('');
   const [desc, setDesc] = useState('');
   const [selected, setSelected] = useState<TemplateEntry | null>(null); // null = Blank
+  const [sizeId, setSizeId] = useState(DEFAULT_CARD_SIZE.id);
+  const [customW, setCustomW] = useState(DEFAULT_CARD_SIZE.width);
+  const [customH, setCustomH] = useState(DEFAULT_CARD_SIZE.height);
 
   const builtins = useMemo(() => builtinTemplates(), []);
   const [globalT, setGlobalT] = useState<TemplateEntry[]>([]);
@@ -76,16 +82,40 @@ export const ProjectDashboard = () => {
   const pickTemplate = (entry: TemplateEntry | null) => {
     setSelected(entry);
     if (entry && !name.trim()) setName(entry.label);
+    // Reflect the starter's own dimensions in the size picker so choosing it
+    // doesn't silently distort its layout (the user can still change it).
+    if (entry) {
+      const { width, height } = entry.template;
+      const match = matchCardSize(width, height);
+      if (match) {
+        setSizeId(match.id);
+      } else {
+        setSizeId(CUSTOM_SIZE_ID);
+        setCustomW(width);
+        setCustomH(height);
+      }
+    }
+  };
+
+  const resolveSize = (): { width: number; height: number } => {
+    if (sizeId === CUSTOM_SIZE_ID) {
+      return { width: Math.max(1, Math.round(customW)), height: Math.max(1, Math.round(customH)) };
+    }
+    const preset = CARD_SIZE_PRESETS.find((s) => s.id === sizeId) ?? DEFAULT_CARD_SIZE;
+    return { width: preset.width, height: preset.height };
   };
 
   const handleCreate = () => {
     if (!name.trim()) return;
     const seed = selected ? instantiate(selected) : undefined;
-    const id = createProject(name.trim(), desc.trim(), seed);
+    const id = createProject(name.trim(), desc.trim(), seed, resolveSize());
     const slug = useProjectStore.getState().projects.find((p) => p.id === id)?.slug ?? '';
     setName('');
     setDesc('');
     setSelected(null);
+    setSizeId(DEFAULT_CARD_SIZE.id);
+    setCustomW(DEFAULT_CARD_SIZE.width);
+    setCustomH(DEFAULT_CARD_SIZE.height);
     setOpen(false);
     navigate(`/e/${slug}`);
   };
@@ -201,6 +231,46 @@ export const ProjectDashboard = () => {
                         </button>
                       ))}
                     </div>
+                  </div>
+
+                  <div>
+                    <p className="text-xs font-display font-semibold text-muted-foreground uppercase tracking-wider mb-2">Card size</p>
+                    <Select value={sizeId} onValueChange={setSizeId}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {CARD_SIZE_PRESETS.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            <span className="font-medium">{s.label}</span>
+                            <span className="text-muted-foreground"> — {s.hint}</span>
+                          </SelectItem>
+                        ))}
+                        <SelectItem value={CUSTOM_SIZE_ID}>Custom…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {sizeId === CUSTOM_SIZE_ID && (
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                          <Label className="text-[11px] text-muted-foreground">Width (px)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={customW}
+                            onChange={(e) => setCustomW(+e.target.value)}
+                          />
+                        </div>
+                        <div>
+                          <Label className="text-[11px] text-muted-foreground">Height (px)</Label>
+                          <Input
+                            type="number"
+                            min={1}
+                            value={customH}
+                            onChange={(e) => setCustomH(+e.target.value)}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <Button onClick={handleCreate} className="w-full">Create</Button>
