@@ -2,7 +2,8 @@
  * Local, client-side rendering of cards to PNG and PDF — no server, no print
  * dialog. Each card face is built from the shared `cardInnerHtml` markup into an
  * offscreen node, rasterised with html-to-image, then either downloaded as PNG
- * (single) / a ZIP of PNGs (many), or assembled into a PDF (one face per page).
+ * (single) / a ZIP of PNGs (many), or laid out into a print-and-play PDF — cards
+ * at their true physical size, gridded on pages with a cutting gutter + crop marks.
  *
  * Uploaded/data-URL images rasterise cleanly. Images referenced by an external
  * cross-origin URL without CORS may taint the canvas and fail to render.
@@ -14,6 +15,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { CardProject, CardTemplate, CardRow } from '@/types/card';
 import { cardInnerHtml } from '@/services/cardFiles';
+import { CARD_DPI } from '@/lib/cardSizes';
 import { loadGoogleFonts } from '@/lib/fonts';
 import { loadStylesheets, templateHasIcons, iconCssUrls, MANA_CSS } from '@/lib/icons';
 import { usesManaTokens } from '@/lib/mana';
@@ -119,24 +121,95 @@ export const exportProjectImages = async (project: CardProject) => {
   saveAs(await zip.generateAsync({ type: 'blob' }), `${base}_images.zip`);
 };
 
-/** Export a generated PDF, one card face per page at the card's native size. */
-export const exportProjectPdf = async (project: CardProject) => {
+const MM_PER_IN = 25.4;
+/** Printable page dimensions (portrait) in mm. */
+const PAGE_MM: Record<'a4' | 'letter', [number, number]> = {
+  a4: [210, 297],
+  letter: [215.9, 279.4],
+};
+
+export interface PrintSheetOptions {
+  /** Paper size for the sheets. Default 'a4'. */
+  pageSize?: 'a4' | 'letter';
+  /** Gap between cards, in mm, for cutting. Default 3. */
+  gutterMm?: number;
+  /** Page margin, in mm. Default 6 (fits 3×3 poker cards on A4). */
+  marginMm?: number;
+  /** Draw corner crop marks around each card. Default true. */
+  cropMarks?: boolean;
+}
+
+/** Card px → mm at the app's print convention (150 dpi). */
+const pxToMm = (px: number) => (px / CARD_DPI) * MM_PER_IN;
+
+/** Corner crop marks (short ticks extending outward from each corner). */
+const drawCropMarks = (pdf: jsPDF, x: number, y: number, w: number, h: number, len: number) => {
+  pdf.setDrawColor(140);
+  pdf.setLineWidth(0.1);
+  const corners: [number, number, number, number][] = [
+    // [horizontal tick], then [vertical tick] per corner
+    [x - len, y, x, y], [x, y - len, x, y],                       // top-left
+    [x + w, y, x + w + len, y], [x + w, y - len, x + w, y],       // top-right
+    [x - len, y + h, x, y + h], [x, y + h, x, y + h + len],       // bottom-left
+    [x + w, y + h, x + w + len, y + h], [x + w, y + h, x + w, y + h + len], // bottom-right
+  ];
+  for (const [x1, y1, x2, y2] of corners) pdf.line(x1, y1, x2, y2);
+};
+
+/**
+ * Export a print-and-play PDF: every card face laid out at its true physical
+ * size (px ÷ 150 dpi → inches) on printable pages, with a cutting gutter and
+ * optional corner crop marks. Cards flow left-to-right and wrap onto new rows /
+ * pages; mixed card sizes are shelf-packed by row height.
+ */
+export const exportProjectPdf = async (project: CardProject, options: PrintSheetOptions = {}) => {
   const faces = collectFaces(project);
   if (!faces.length) throw new Error('Nothing to render — add a card first.');
   if (faces.some((f) => templateHasIcons(f.template))) loadStylesheets(iconCssUrls(project.iconStylesheets));
   if (faces.some((f) => usesManaTokens(f.template, [f.row]))) loadStylesheets([MANA_CSS]);
 
-  let pdf: jsPDF | null = null;
+  const pageSize = options.pageSize ?? 'a4';
+  const margin = options.marginMm ?? 6;
+  const gutter = options.gutterMm ?? 3;
+  const cropMarks = options.cropMarks ?? true;
+  const [pageW, pageH] = PAGE_MM[pageSize];
+  const markLen = Math.max(0, Math.min(3, gutter, margin));
+  const EPS = 0.01;
+
+  const pdf = new jsPDF({ unit: 'mm', format: pageSize, orientation: 'portrait' });
+  const usableRight = pageW - margin;
+  const usableBottom = pageH - margin;
+  let x = margin;
+  let y = margin;
+  let rowMaxH = 0;
+  let pageHasContent = false;
+
   for (const face of faces) {
-    const { width: w, height: h } = face.template;
-    const orientation = w > h ? 'landscape' : 'portrait';
+    const w = pxToMm(face.template.width);
+    const h = pxToMm(face.template.height);
     const png = await renderFaceToPng(face, project.assets);
-    if (!pdf) {
-      pdf = new jsPDF({ unit: 'px', format: [w, h], orientation });
-    } else {
-      pdf.addPage([w, h], orientation);
+
+    // Wrap to a new row when this card would overflow the row's right edge.
+    if (x > margin && x + w > usableRight + EPS) {
+      x = margin;
+      y += rowMaxH + gutter;
+      rowMaxH = 0;
     }
-    pdf.addImage(png, 'PNG', 0, 0, w, h);
+    // Start a new page when the row would overflow the bottom.
+    if (pageHasContent && y + h > usableBottom + EPS) {
+      pdf.addPage(pageSize, 'portrait');
+      x = margin;
+      y = margin;
+      rowMaxH = 0;
+      pageHasContent = false;
+    }
+
+    pdf.addImage(png, 'PNG', x, y, w, h);
+    if (cropMarks && markLen > 0) drawCropMarks(pdf, x, y, w, h, markLen);
+    pageHasContent = true;
+    x += w + gutter;
+    rowMaxH = Math.max(rowMaxH, h);
   }
-  pdf!.save(`${safeName(project.name) || 'cards'}.pdf`);
+
+  pdf.save(`${safeName(project.name) || 'cards'}.pdf`);
 };

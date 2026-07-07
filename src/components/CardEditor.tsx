@@ -29,8 +29,10 @@ import { useGitHubStore } from '@/store/useGitHubStore';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CardSizePicker } from '@/components/CardSizePicker';
-import { DEFAULT_CARD_SIZE } from '@/lib/cardSizes';
+import { DEFAULT_CARD_SIZE, CARD_DPI } from '@/lib/cardSizes';
+import type { PrintSheetOptions } from '@/services/render';
 
 export const CardEditor = () => {
   const {
@@ -64,6 +66,10 @@ export const CardEditor = () => {
   const [addOpen, setAddOpen] = useState(false);
   const [newCardName, setNewCardName] = useState('');
   const [newCardSize, setNewCardSize] = useState({ width: DEFAULT_CARD_SIZE.width, height: DEFAULT_CARD_SIZE.height });
+  const [pdfOpen, setPdfOpen] = useState(false);
+  const [pdfPageSize, setPdfPageSize] = useState<'a4' | 'letter'>('a4');
+  const [pdfGutter, setPdfGutter] = useState(3);
+  const [pdfCropMarks, setPdfCropMarks] = useState(true);
 
   // Undo / redo keyboard shortcuts (skip while typing in a field).
   useEffect(() => {
@@ -139,6 +145,14 @@ export const CardEditor = () => {
     const name = newCardName.trim() || `Card ${project.sheets.length + 1}`;
     addSheet(activeProjectId, name, newCardSize);
     setAddOpen(false);
+  };
+
+  const handleExportPdf = () => {
+    const opts: PrintSheetOptions = { pageSize: pdfPageSize, gutterMm: pdfGutter, cropMarks: pdfCropMarks };
+    setPdfOpen(false);
+    toast.promise(exportProjectPdfLocalGenerated(project, opts), {
+      loading: 'Building print sheet…', success: 'PDF downloaded', error: (e) => e?.message || 'Render failed',
+    });
   };
 
   const handleStartRename = (sheetId: string, currentName: string) => {
@@ -346,10 +360,8 @@ export const CardEditor = () => {
               })}>
                 <ImageIcon size={14} className="mr-2" /> Images (PNG)
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => toast.promise(exportProjectPdfLocalGenerated(project), {
-                loading: 'Rendering PDF…', success: 'PDF downloaded', error: (e) => e?.message || 'Render failed',
-              })}>
-                <FileText size={14} className="mr-2" /> PDF (local)
+              <DropdownMenuItem onClick={() => setPdfOpen(true)}>
+                <FileText size={14} className="mr-2" /> PDF (print &amp; play)
               </DropdownMenuItem>
               <DropdownMenuItem onClick={async () => {
                 try {
@@ -518,6 +530,45 @@ export const CardEditor = () => {
           </TabsContent>
         </Tabs>
       )}
+
+      {/* Print & Play PDF options */}
+      <Dialog open={pdfOpen} onOpenChange={setPdfOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Print &amp; Play PDF</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <p className="text-xs text-muted-foreground">
+              Cards are placed at their true physical size ({CARD_DPI} dpi) with a cutting gutter, so you can print and cut them out.
+              {sheet && (
+                <> This card: <span className="text-foreground font-medium">{(sheet.template.width / CARD_DPI).toFixed(2)} × {(sheet.template.height / CARD_DPI).toFixed(2)} in</span>.</>
+              )}
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs text-muted-foreground">Page size</Label>
+                <Select value={pdfPageSize} onValueChange={(v) => setPdfPageSize(v as 'a4' | 'letter')}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="a4">A4 (210 × 297 mm)</SelectItem>
+                    <SelectItem value="letter">US Letter (8.5 × 11 in)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground">Gap (mm)</Label>
+                <Input type="number" min={0} step={0.5} value={pdfGutter} onChange={(e) => setPdfGutter(Math.max(0, +e.target.value))} />
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Switch id="crop-marks" checked={pdfCropMarks} onCheckedChange={setPdfCropMarks} />
+              <Label htmlFor="crop-marks" className="text-xs text-muted-foreground cursor-pointer">Corner crop marks (cutting guides)</Label>
+            </div>
+            <Button onClick={handleExportPdf} className="w-full">Export PDF</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Tour steps={tourSteps} open={tour.open} onClose={tour.close} />
     </div>
   );

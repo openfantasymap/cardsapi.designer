@@ -113,7 +113,7 @@ Base proxy URL: `VITE_CARDFORGE_API_URL` env var, defaulting to `/api`.
 
 - **JSON**: Direct browser download of project JSON.
 - **ZIP**: JSZip bundle built from `buildProjectTextFiles` (mirrors the repo layout; images stay inline as data URLs).
-- **PDF (local)**: `exportProjectPdfLocal` opens a self-contained print window (all cards, images inlined) → "Save as PDF". Fully client-side.
+- **PDF (print & play)**: `exportProjectPdf` (`src/services/render.ts`) rasterises each face and lays the cards out at their **true physical size** (px ÷ 150 dpi, the `CARD_DPI` convention in `src/lib/cardSizes.ts`) on A4/Letter pages, with a cutting gutter and corner crop marks so cards can be printed and cut out. Options (page size / gap / crop marks) come from the "Print & Play PDF" dialog in `CardEditor`. Fully client-side. (`exportProjectPdfLocal` in `export.ts`, a print-window variant, is retained but unused.)
 - **PDF (remote)**: `exportProjectPdfRemote` POSTs to the proxy's `/render/pdf` (WeasyPrint) for high-fidelity output.
 
 ### UI Components

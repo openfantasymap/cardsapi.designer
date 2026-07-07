@@ -17,9 +17,15 @@ export interface CardSizePreset {
   height: number;
 }
 
-const DPI = 150;
+/**
+ * The app's print convention: card pixels map to physical size at 150 dpi, so a
+ * 375×525 px card is 2.5×3.5 in. Used both to build these presets and to size
+ * cards on printable PDF sheets (see `src/services/render.ts`).
+ */
+export const CARD_DPI = 150;
+
 /** Convert inches → pixels at the app's print convention. */
-const inch = (w: number, h: number) => ({ width: Math.round(w * DPI), height: Math.round(h * DPI) });
+const inch = (w: number, h: number) => ({ width: Math.round(w * CARD_DPI), height: Math.round(h * CARD_DPI) });
 
 export const CARD_SIZE_PRESETS: CardSizePreset[] = [
   { id: 'poker', label: 'Poker / Standard', hint: '2.5 × 3.5 in — MTG, Pokémon, most TCGs', ...inch(2.5, 3.5) },
